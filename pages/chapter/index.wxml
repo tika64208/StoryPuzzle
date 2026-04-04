@@ -1,0 +1,39 @@
+<view class="page-shell">
+  <view class="page-title">系统章节</view>
+  <view class="page-subtitle">这里保留官方示例章节。玩家自己上传的图片和好友挑战图，会统一放在自定义中心里管理。</view>
+
+  <view class="card">
+    <view class="row-between">
+      <view>
+        <view class="card-title">自定义拼图中心</view>
+        <view class="card-desc">当前已保存 {{customCount}} 个自定义关卡，支持相册选图和挑战码导入。</view>
+      </view>
+      <view class="chip">{{customCount}} 个</view>
+    </view>
+    <button class="secondary-btn action-gap" bindtap="handleCustom">进入自定义中心</button>
+  </view>
+
+  <block wx:for="{{chapters}}" wx:key="chapterId">
+    <view class="card">
+      <view class="row-between">
+        <view class="card-title">{{item.title}}</view>
+        <view class="chip">已完成 {{item.completedCount}} / {{item.totalLevels}}</view>
+      </view>
+      <view class="card-desc">{{item.summary}}</view>
+      <view class="level-grid">
+        <block wx:for="{{item.levels}}" wx:key="levelId">
+          <view
+            class="level-item {{item.unlocked ? '' : 'level-item-locked'}} {{item.completed ? 'level-item-done' : ''}}"
+            data-level-id="{{item.levelId}}"
+            data-unlocked="{{item.unlocked}}"
+            bindtap="handleLevelTap"
+          >
+            <view class="level-name">{{item.title}}</view>
+            <view class="level-meta">{{item.rows}}x{{item.cols}} · {{item.timeLimit}}秒</view>
+            <view class="level-stars">{{item.completed ? '星级 ' + item.stars : item.unlocked ? '可挑战' : '未解锁'}}</view>
+          </view>
+        </block>
+      </view>
+    </view>
+  </block>
+</view>

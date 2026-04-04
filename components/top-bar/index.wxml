@@ -1,0 +1,13 @@
+<view class="top-shell">
+  <view class="row-between">
+    <view class="title-wrap">
+      <view class="title">{{title}}</view>
+      <view class="subtitle">{{clueTag}}</view>
+    </view>
+    <view class="meta-wrap">
+      <view class="meta-item">剩余 {{timeText}}</view>
+      <view class="meta-item">体力 {{energy}}</view>
+      <view class="pause-btn" bindtap="handlePause">暂停</view>
+    </view>
+  </view>
+</view>

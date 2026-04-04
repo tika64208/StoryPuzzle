@@ -1,0 +1,87 @@
+.board {
+  display: grid;
+  gap: 0;
+  user-select: none;
+}
+
+.slot {
+  position: relative;
+  aspect-ratio: 1 / 1;
+  overflow: visible;
+  background: transparent;
+}
+
+.piece {
+  position: absolute;
+  inset: -1px;
+  border: none;
+  border-radius: 0;
+  overflow: hidden;
+  transition: transform 0.14s ease-out;
+  will-change: transform;
+}
+
+.piece-image,
+.piece-fallback {
+  position: absolute;
+  display: block;
+}
+
+.piece-image {
+  max-width: none;
+}
+
+.piece-fallback {
+  inset: 0;
+}
+
+.piece-dragging {
+  z-index: 8;
+}
+
+.piece-glowing {}
+
+.piece-outline {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.outline-edge {
+  position: absolute;
+  background: rgba(122, 255, 247, 0.98);
+  box-shadow:
+    0 0 6px rgba(122, 255, 247, 0.98),
+    0 0 14px rgba(72, 227, 255, 0.9),
+    0 0 24px rgba(72, 227, 255, 0.65);
+}
+
+.outline-top,
+.outline-bottom {
+  left: 1px;
+  right: 1px;
+  height: 4px;
+}
+
+.outline-left,
+.outline-right {
+  top: 1px;
+  bottom: 1px;
+  width: 4px;
+}
+
+.outline-top {
+  top: 1px;
+}
+
+.outline-right {
+  right: 1px;
+}
+
+.outline-bottom {
+  bottom: 1px;
+}
+
+.outline-left {
+  left: 1px;
+}

@@ -1,0 +1,74 @@
+.game-shell {
+  padding-bottom: 64rpx;
+}
+
+.summary-card {
+  margin-top: 18rpx;
+  background:
+    radial-gradient(circle at 88% 12%, rgba(130, 231, 255, 0.16), transparent 18%),
+    linear-gradient(180deg, rgba(12, 44, 65, 0.68) 0%, rgba(8, 26, 41, 0.72) 100%);
+}
+
+.board-card {
+  margin-top: 18rpx;
+  padding: 0;
+  background: transparent;
+  border: none;
+  box-shadow: none;
+}
+
+.controls-card {
+  margin-top: 18rpx;
+  background:
+    radial-gradient(circle at 10% 18%, rgba(125, 245, 228, 0.12), transparent 16%),
+    linear-gradient(180deg, rgba(12, 42, 61, 0.68) 0%, rgba(8, 26, 41, 0.72) 100%);
+}
+
+.control-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.tools-row {
+  margin-top: 18rpx;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.unlock-btn {
+  grid-column: 1 / -1;
+}
+
+.success-card {
+  margin-top: 18rpx;
+  background:
+    radial-gradient(circle at 84% 14%, rgba(137, 244, 255, 0.16), transparent 18%),
+    radial-gradient(circle at 12% 88%, rgba(112, 214, 176, 0.12), transparent 16%),
+    linear-gradient(180deg, rgba(14, 45, 65, 0.7) 0%, rgba(8, 27, 42, 0.76) 100%);
+}
+
+.success-image {
+  display: block;
+  width: 100%;
+  height: 420rpx;
+  margin-top: 22rpx;
+  border-radius: 28rpx;
+  border: 1rpx solid rgba(177, 232, 255, 0.14);
+  box-shadow:
+    inset 0 2rpx 0 rgba(236, 251, 255, 0.08),
+    16rpx 16rpx 32rpx rgba(2, 10, 18, 0.24);
+}
+
+.stats-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14rpx;
+  margin-top: 22rpx;
+}
+
+.action-gap {
+  margin-top: 22rpx;
+}

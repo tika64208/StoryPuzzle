@@ -1,0 +1,37 @@
+.action-gap {
+  margin-top: 22rpx;
+}
+
+.level-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+
+.level-item {
+  padding: 22rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+.level-item-done {
+  border-color: rgba(241, 191, 124, 0.44);
+}
+
+.level-item-locked {
+  opacity: 0.45;
+}
+
+.level-name {
+  font-size: 28rpx;
+  font-weight: 600;
+}
+
+.level-meta,
+.level-stars {
+  margin-top: 10rpx;
+  font-size: 22rpx;
+  color: #c4cfde;
+}

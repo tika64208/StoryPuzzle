@@ -1,0 +1,54 @@
+.preview-card {
+  position: relative;
+  overflow: hidden;
+}
+
+.preview-scene {
+  height: 320rpx;
+  border-radius: 24rpx;
+  background-size: cover;
+  background-position: center;
+}
+
+.preview-scene-image {
+  display: block;
+  width: 100%;
+}
+
+.preview-chip {
+  position: absolute;
+  top: 46rpx;
+  left: 46rpx;
+}
+
+.intro-row {
+  margin-bottom: 12rpx;
+}
+
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.stats-cell {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stats-label {
+  font-size: 22rpx;
+  color: #bcc8d8;
+}
+
+.stats-value {
+  margin-top: 10rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.start-btn {
+  margin-top: 24rpx;
+}

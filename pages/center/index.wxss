@@ -1,0 +1,35 @@
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 20rpx;
+}
+
+.stats-cell {
+  padding: 20rpx;
+  border-radius: 20rpx;
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.stats-cell-wide {
+  grid-column: 1 / -1;
+}
+
+.stats-label {
+  font-size: 22rpx;
+  color: #c3cedd;
+}
+
+.stats-value {
+  margin-top: 10rpx;
+  font-size: 30rpx;
+  font-weight: 600;
+}
+
+.small-text {
+  font-size: 24rpx;
+}
+
+.action-gap {
+  margin-top: 22rpx;
+}

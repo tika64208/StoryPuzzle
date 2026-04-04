@@ -1,0 +1,8 @@
+<view wx:if="{{visible}}" class="mask">
+  <view class="dialog">
+    <view class="dialog-title">线索还没断</view>
+    <view class="dialog-desc">看完激励广告可立即获得 {{timeBonus}} 秒加时，继续拼回最后一组碎片。</view>
+    <button class="primary-btn confirm-btn" bindtap="handleConfirm">继续调查</button>
+    <button class="ghost-btn" bindtap="handleClose">放弃并结算</button>
+  </view>
+</view>

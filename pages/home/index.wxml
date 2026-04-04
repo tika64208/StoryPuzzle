@@ -1,0 +1,181 @@
+<view class="page-shell home-shell">
+  <view class="ambient ambient-left"></view>
+  <view class="ambient ambient-right"></view>
+
+  <view class="card hero-card">
+    <view class="hero-header">
+      <view class="hero-badge">深海透明档案</view>
+      <view class="chip energy-chip">体力 {{profile.energy}} / {{profile.maxEnergy}}</view>
+    </view>
+
+    <view class="hero-title">
+      拼回每一块线索，
+      <text class="hero-highlight">也能拼回你自己的照片</text>
+    </view>
+    <view class="hero-subtitle">
+      首页现在把继续游戏、章节剧情、自定义拼图和体力状态都收进了一页，开场就能直接进入状态。
+    </view>
+
+    <view class="hero-preview" wx:if="{{continueLevel}}">
+      <image
+        wx:if="{{continueLevel.previewImage}}"
+        class="hero-preview-image"
+        src="{{continueLevel.previewImage}}"
+        mode="aspectFill"
+      ></image>
+      <view wx:else class="hero-preview-fallback"></view>
+      <view class="hero-preview-mask"></view>
+      <view class="hero-preview-content">
+        <view class="hero-preview-label">继续调查</view>
+        <view class="hero-preview-title">{{continueLevel.displayTitle}}</view>
+        <view class="hero-preview-meta">
+          {{continueLevel.displayChapterTitle}} · {{continueLevel.rows}}x{{continueLevel.cols}} · {{continueLevel.timeLimit}} 秒
+        </view>
+      </view>
+    </view>
+
+    <view class="hero-actions">
+      <button class="primary-btn" bindtap="handleContinue">继续游戏</button>
+      <view class="grid-two quick-grid">
+        <button class="secondary-btn" bindtap="handleBrowse">系统章节</button>
+        <button class="secondary-btn" bindtap="handleCustom">自定义拼图</button>
+      </view>
+    </view>
+
+    <view class="hero-footer">
+      <view class="hero-footer-label">体力状态</view>
+      <view class="hero-footer-value">{{energyText}}</view>
+    </view>
+  </view>
+
+  <view class="stats-grid">
+    <view class="card stat-card">
+      <view class="stat-value">{{dashboardStats.completedLevels}}</view>
+      <view class="stat-label">已完成关卡</view>
+      <view class="stat-meta">总计 {{dashboardStats.totalLevels}} 关</view>
+    </view>
+    <view class="card stat-card">
+      <view class="stat-value">{{chapterCards.length}}</view>
+      <view class="stat-label">系统章节</view>
+      <view class="stat-meta">剧情持续扩展中</view>
+    </view>
+    <view class="card stat-card">
+      <view class="stat-value">{{dashboardStats.customLevels}}</view>
+      <view class="stat-label">自定义关卡</view>
+      <view class="stat-meta">支持相册生成与分享</view>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <view>
+      <view class="section-title">推荐主题</view>
+      <view class="section-copy">优先把主线剧情放到首屏，开局就能进入第一章。</view>
+    </view>
+    <button class="ghost-btn compact-ghost" bindtap="handleBrowse">查看全部</button>
+  </view>
+
+  <view class="card featured-card" wx:if="{{featuredChapter}}">
+    <view class="featured-cover">
+      <image
+        wx:if="{{featuredChapter.coverImage}}"
+        class="featured-cover-image"
+        src="{{featuredChapter.coverImage}}"
+        mode="aspectFill"
+      ></image>
+      <view wx:else class="featured-cover-fallback" style="background: {{featuredChapter.coverStyle}};"></view>
+      <view class="featured-cover-mask"></view>
+      <view class="featured-badge">{{featuredChapter.displayBadge}}</view>
+    </view>
+    <view class="featured-main">
+      <view class="row-between featured-title-row">
+        <view class="card-title">{{featuredChapter.displayTitle}}</view>
+        <view class="chip">{{featuredChapter.completedCount}} / {{featuredChapter.totalLevels}}</view>
+      </view>
+      <view class="card-desc">{{featuredChapter.displaySummary}}</view>
+      <view class="featured-meta">下一条线索：{{featuredChapter.focusLevelText}}</view>
+      <view class="progress-track">
+        <view
+          class="progress-fill"
+          style="width: {{featuredChapter.progressPercent}}%; background: {{featuredChapter.accentColor}};"
+        ></view>
+      </view>
+      <view class="progress-copy">{{featuredChapter.progressText}}</view>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <view>
+      <view class="section-title">自定义拼图</view>
+      <view class="section-copy">默认图、相册图和朋友分享的挑战码都从这里进入。</view>
+    </view>
+    <button class="ghost-btn compact-ghost" bindtap="handleCenter">个人中心</button>
+  </view>
+
+  <view class="card custom-card">
+    <view class="custom-main">
+      <image
+        wx:if="{{customSummary.latest && customSummary.latest.previewImage}}"
+        class="custom-thumb"
+        src="{{customSummary.latest.previewImage}}"
+        mode="aspectFill"
+      ></image>
+      <view wx:else class="custom-thumb custom-thumb-placeholder">
+        <view class="custom-thumb-title">默认图片</view>
+        <view class="custom-thumb-copy">随时生成一关新的拼图</view>
+      </view>
+      <view class="custom-info">
+        <view class="row-between">
+          <view class="card-title">我的拼图仓库</view>
+          <view class="chip">{{customSummary.count}} 个</view>
+        </view>
+        <view class="card-desc" wx:if="{{customSummary.latest}}">
+          最近保存：{{customSummary.latest.title}} · {{customSummary.latest.rows}}x{{customSummary.latest.cols}}
+        </view>
+        <view class="card-desc" wx:else>
+          还没有自定义关卡。现在就能用默认图片直接生成，也可以换成自己的相册照片。
+        </view>
+        <view class="grid-two custom-actions">
+          <button class="secondary-btn" bindtap="handleCustom">进入自定义中心</button>
+          <button class="secondary-btn" bindtap="handleLatestCustom">
+            {{customSummary.latest ? '继续最近一关' : '直接去生成'}}
+          </button>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="section-head">
+    <view>
+      <view class="section-title">章节总览</view>
+      <view class="section-copy">把每一章都做成首页可扫一眼的卡片，方便快速选方向。</view>
+    </view>
+  </view>
+
+  <block wx:for="{{chapterCards}}" wx:key="chapterId">
+    <view class="card chapter-card" bindtap="handleBrowse">
+      <view class="chapter-cover">
+        <image
+          wx:if="{{item.coverImage}}"
+          class="chapter-cover-image"
+          src="{{item.coverImage}}"
+          mode="aspectFill"
+        ></image>
+        <view wx:else class="chapter-cover-fallback" style="background: {{item.coverStyle}};"></view>
+      </view>
+      <view class="chapter-main">
+        <view class="row-between">
+          <view class="card-title">{{item.displayTitle}}</view>
+          <view class="chip">{{item.completedCount}} / {{item.totalLevels}}</view>
+        </view>
+        <view class="chapter-summary">{{item.displaySummary}}</view>
+        <view class="progress-track compact-track">
+          <view
+            class="progress-fill"
+            style="width: {{item.progressPercent}}%; background: {{item.accentColor}};"
+          ></view>
+        </view>
+        <view class="chapter-meta">{{item.progressText}}</view>
+      </view>
+    </view>
+  </block>
+</view>

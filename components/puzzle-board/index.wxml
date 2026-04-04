@@ -1,0 +1,35 @@
+<view class="board" style="{{boardStyle}}">
+  <block wx:for="{{slots}}" wx:key="slotIndex">
+    <view
+      class="slot"
+      data-piece-id="{{item.pieceId}}"
+      data-group-id="{{item.groupId}}"
+      data-locked="{{item.locked}}"
+      catchtouchstart="handleTouchStart"
+      catchtouchmove="handleTouchMove"
+      catchtouchend="handleTouchEnd"
+      catchtouchcancel="handleTouchEnd"
+    >
+      <view
+        class="piece {{draggingGroupId === item.groupId ? 'piece-dragging piece-glowing' : ''}}"
+        style="{{draggingGroupId === item.groupId ? activeTransformStyle : ''}}"
+      >
+        <image
+          wx:if="{{item.pieceImageSrc}}"
+          class="piece-image"
+          src="{{item.pieceImageSrc}}"
+          mode="scaleToFill"
+          draggable="false"
+          style="{{item.pieceImageStyle}}"
+        ></image>
+        <view wx:else class="piece-fallback" style="{{item.pieceStyle}}"></view>
+        <view wx:if="{{draggingGroupId === item.groupId}}" class="piece-outline">
+          <view wx:if="{{item.outline.top}}" class="outline-edge outline-top"></view>
+          <view wx:if="{{item.outline.right}}" class="outline-edge outline-right"></view>
+          <view wx:if="{{item.outline.bottom}}" class="outline-edge outline-bottom"></view>
+          <view wx:if="{{item.outline.left}}" class="outline-edge outline-left"></view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

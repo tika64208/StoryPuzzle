@@ -1,0 +1,65 @@
+<view class="page-shell">
+  <view class="page-title">个人中心</view>
+  <view class="page-subtitle">
+    这里集中管理体力、定格符、签到、音效和自定义拼图入口，方便随时补资源再回去继续闯关。
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="card-title">当前资源</view>
+      <view class="chip">金币 {{profile.coins}}</view>
+    </view>
+    <view class="stats-grid">
+      <view class="stats-cell">
+        <view class="stats-label">体力</view>
+        <view class="stats-value">{{profile.energy}} / {{profile.maxEnergy}}</view>
+      </view>
+      <view class="stats-cell">
+        <view class="stats-label">定格符</view>
+        <view class="stats-value">{{profile.unlockDragTools}}</view>
+      </view>
+      <view class="stats-cell stats-cell-wide">
+        <view class="stats-label">恢复倒计时</view>
+        <view class="stats-value small-text">{{energyText}}</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="card-title">自定义拼图</view>
+      <view class="chip">相册 / 分享</view>
+    </view>
+    <view class="card-desc">从相册上传自己的照片生成关卡，或者导入朋友发来的挑战码。</view>
+    <button class="secondary-btn action-gap" bindtap="handleCustom">进入自定义中心</button>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="card-title">每日签到</view>
+      <view class="chip">+3 体力 +1 定格符</view>
+    </view>
+    <view class="card-desc">每天第一次签到都会补充金币、体力和定格符，适合把当天的闯关资源一次备齐。</view>
+    <button class="primary-btn action-gap" bindtap="handleSignIn">立即签到</button>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="card-title">广告补给</view>
+      <view class="chip">{{hasRealAdUnit ? '已接真实广告' : '开发占位中'}}</view>
+    </view>
+    <view class="card-desc">当前已经接好激励广告封装，可以分别补体力或补 1 个定格符。</view>
+    <view class="grid-two action-gap">
+      <button class="secondary-btn" bindtap="handleWatchAd">看广告补 2 点体力</button>
+      <button class="secondary-btn" bindtap="handleWatchUnlockAd">看广告补 1 个定格符</button>
+    </view>
+  </view>
+
+  <view class="card">
+    <view class="row-between">
+      <view class="card-title">基础设置</view>
+      <switch checked="{{profile.soundEnabled}}" color="#d57d49" bindchange="handleToggleSound" />
+    </view>
+    <view class="card-desc">后续这里还可以继续扩展成震动、背景音乐、剧情跳过和隐私授权。</view>
+  </view>
+</view>

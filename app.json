@@ -1,0 +1,21 @@
+{
+  "pages": [
+    "pages/home/index",
+    "pages/custom/index",
+    "pages/chapter/index",
+    "pages/level-intro/index",
+    "pages/game/index",
+    "pages/result/index",
+    "pages/center/index"
+  ],
+  "window": {
+    "navigationBarTitleText": "悬疑线索拼图",
+    "navigationBarTextStyle": "white",
+    "navigationBarBackgroundColor": "#0b2234",
+    "backgroundColor": "#06131f",
+    "backgroundTextStyle": "dark"
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json",
+  "lazyCodeLoading": "requiredComponents"
+}

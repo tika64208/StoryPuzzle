@@ -1,0 +1,155 @@
+# 剧情图片提示词导出
+
+## 全局设定
+
+- 项目：悬疑线索拼图
+- 用途：为微信拼图小程序生成章节封面图和关卡场景图
+- 推荐比例：1:1
+- 推荐分辨率：1024x1024 或 1536x1536
+- 统一风格：电影级环境叙事插画，写实偏美术概念图，悬疑微恐氛围，强叙事线索，细节丰富，适合切成拼图后依然保留辨识度
+- 构图规则：
+  - 主体和关键线索尽量放在画面中部或黄金分割附近，避免边缘信息过少
+  - 避免整块纯黑或纯白区域，保证拼图切片后每块都有细节
+  - 优先做环境叙事，不依赖正脸人物，必要时只保留模糊背影或影子
+  - 避免画面中出现文字、数字、logo、UI、边框、水印
+- 通用负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+## ch01 深夜旧宅
+
+### 故事背景
+暴雨夜，一栋多年无人居住的旧宅突然亮起灯光。失踪记者苏宁最后一次发出的定位就在这里。侦探赶到后发现，大门并没有被外力破坏，屋内也没有明显打斗痕迹，真正的线索被藏进了潮湿的地面、碎裂的镜面、地下室台阶和被风吹散的纸页里。整个章节的核心悬念是：看似有人从屋内逃离，实际上凶手一直没有离开。
+
+### 视觉关键词
+民国旧宅、午夜暴雨、潮湿木地板、冷月光与暖钨丝灯混合光、灰尘漂浮、安静但压迫的悬疑氛围
+
+### 章节封面提示词
+- 标题：深夜旧宅 章节封面
+- 正向提示词：一栋被暴雨包围的老旧宅邸，午夜时分，二层某一扇窗透出微弱暖黄灯光，前院积水反射冷蓝月色，铁门半掩，石阶潮湿，屋外树影被风吹得倾斜，空气里有细雨和薄雾，镜头略低机位仰视，强调“有人仍在屋内”的紧张感，电影级环境叙事插画，写实概念美术，微恐悬疑，冷暖对比强烈，细节丰富，1:1 构图，适合做拼图封面
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+### 关卡提示词
+
+#### ch01-lv01 门后的脚印
+- 剧情节点：侦探在门后发现一串湿泥脚印，脚印先朝外离开，又诡异地绕回室内，说明有人故意制造“离开现场”的假象。
+- 正向提示词：老旧宅邸狭长玄关，潮湿木地板上有一串清晰泥脚印，脚印从门内向外延伸后又突然折返，门板内侧有雨水滴痕，光线来自屋内暖黄壁灯和门缝外的冷蓝雨夜反光，地面细节丰富，脚印是画面主线索，近景俯视构图，真实材质，电影级悬疑场景，美术概念图，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch01-lv02 镜面反光
+- 剧情节点：客厅角落的穿衣镜已经碎裂，但反光里出现的不是凶手，而是一扇本该紧闭的侧窗。
+- 正向提示词：昏暗旧宅客厅，一面高大的破碎穿衣镜立在墙边，镜面布满裂纹，冷蓝月光从侧窗打入，镜子反射出半开的窗框和飘动窗帘，地面散落细小玻璃碎片，环境安静压抑，重点突出“镜中反射出的异常窗户”，中景构图，写实电影感，悬疑微恐，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch01-lv03 台阶划痕
+- 剧情节点：通往地下室的楼梯扶手被擦得过分干净，只有台阶边缘留着拖拽重物时产生的划痕。
+- 正向提示词：通往地下室的狭窄楼梯，灰蓝色水泥台阶和老旧木扶手，扶手异常干净，台阶边缘出现连续拖拽划痕和细碎粉尘，楼下传来暗黄色微光，上方则是冷色阴影，强调线条和划痕走向，斜向透视构图，真实纹理，电影级悬疑环境设计，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch01-lv04 窗边残页
+- 剧情节点：窗边被吹散的纸页里，隐藏着一句没写完的警告：“别相信灯亮着的人”。
+- 正向提示词：旧宅窗边桌面和地板，夜风吹动几张泛黄纸页，纸页边缘破损卷起，窗外是暴雨和冷蓝夜色，窗内暖光很弱，桌上残留墨水瓶和旧钢笔，重点表现被风吹散的纸页和未写完的留言氛围，近景静物叙事，写实概念插画，悬疑感强，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+## ch02 废弃剧场
+
+### 故事背景
+旧宅里拼出的路线把侦探引到了已经停业半年的剧场。这里的聚光灯曾在深夜短暂亮起，像是在为一场根本不存在的演出做准备。空荡座椅间留下的新票根、后台衣箱里拆开的平面图，以及灯控台上残留的微光，都说明这里并非单纯废弃，而是一处被人反复利用的秘密交接点。章节的核心悬念是：真正藏人的地方不在舞台中央，而在观众永远不会注意的舞台结构后侧。
+
+### 视觉关键词
+废弃剧院、红色天鹅绒幕布、尘埃中的聚光灯、空座椅、后台道具间、戏剧化光影
+
+### 章节封面提示词
+- 标题：废弃剧场 章节封面
+- 正向提示词：一座停业已久的老剧场内部，红色天鹅绒幕布半掀，舞台中央只有一束残存聚光灯照亮浮尘，成排座椅陷入阴影，后台入口微微敞开，空气里有陈旧木头和布景的质感，画面应传达“这里刚刚有人来过”的感觉，戏剧化光影，电影级写实悬疑场景，概念美术，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+### 关卡提示词
+
+#### ch02-lv01 红幕背影
+- 剧情节点：红幕后的影子高度不对，说明站在那里的并不是一个真人，而是一段被故意摆好的假目标。
+- 正向提示词：废弃剧场舞台近景，厚重红色幕布刚被掀开一道缝，幕布后出现模糊人影轮廓，但影子比例略显异常，地面可见舞台木板和灰尘，聚光灯从上方形成局部暖色照明，周围空间沉入暗红和深黑，重点突出幕布、影子和舞台张力，写实电影感，悬疑微恐，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch02-lv02 旧票根
+- 剧情节点：散落在座椅之间的票根日期，比剧场停业时间晚了三个月，说明停业后仍有人秘密进出。
+- 正向提示词：老剧场观众席，中景俯视，褪色红座椅整齐向后延伸，几张旧票根散落在座椅和走道之间，地面有尘土和轻微脚印，远处舞台传来极弱暖光，环境色偏暗红和褐色，重点表现“票根被故意遗留”的线索感，写实叙事环境插画，电影级悬疑，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch02-lv03 灯控台编号
+- 剧情节点：灯控台上只有几枚按键还亮着，它们连通的不是主灯，而是舞台上方检修通道的回路。
+- 正向提示词：剧场灯控室内部，一台老旧灯光控制台占据主体，绝大多数按钮已熄灭，只有少数蓝绿色和暖黄色按键发出微弱光芒，控制台旁堆着线路图和灰尘，周围设备陈旧复杂，强调按钮编号和控制台表面的磨损感，科技与废弃感混合，写实电影级概念图，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch02-lv04 后台衣箱
+- 剧情节点：后台衣箱里放的不是戏服，而是一张被拆开的平面结构图，真正的秘密通道藏在舞台设备后侧。
+- 正向提示词：废弃剧场后台，道具和旧木箱堆叠，一个半开的服装箱摆在前景，箱内不是戏服，而是折叠后又被摊开的结构图纸，旁边挂着旧戏服和金属衣架，顶部昏黄工作灯照出温暖局部光区，背景深处保持阴影，强调箱子和图纸的发现感，写实悬疑场景，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+## ch03 雨夜码头
+
+### 故事背景
+剧场里的平面图最终指向一处临海货运码头。这里在雨夜最容易掩盖装卸和交易动静，潮水会冲淡大多数痕迹，但专业打结方式、被调换的集装箱编号和甲板上不合常理的水痕，仍暴露了整场行动的路线。章节最后，侦探发现灯塔并不是单纯的海上航标，而是交易双方约定的倒计时信号。这个主题的核心悬念是：真正的交易地点并不在码头正面，而在灯光和雨幕最能遮蔽视线的侧边航道。
+
+### 视觉关键词
+海港码头、暴雨夜、冷蓝湿润空气、集装箱与货轮甲板、工业照明、灯塔信号
+
+### 章节封面提示词
+- 标题：雨夜码头 章节封面
+- 正向提示词：雨夜海港码头，远处货轮和集装箱在冷蓝工业灯下若隐若现，地面积水反射灯光，风雨斜打，近处缆绳和金属栏杆带有湿润高光，远处灯塔投出一束带雾气的暖黄色信号光，整体应有紧张、冰冷、即将发生交易的压迫感，写实电影级环境叙事插画，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+### 关卡提示词
+
+#### ch03-lv01 潮湿绳结
+- 剧情节点：码头缆桩上的绳结打结方式太专业，不像普通渔民，更像临时改动过的泊船记录。
+- 正向提示词：暴雨后的码头近景，金属缆桩和粗重船缆占据画面主体，绳结被雨水浸湿，纤维细节清晰，甲板和木桩表面带有反光水珠，背景虚化出冷蓝海面和工业灯，重点表现绳结结构与潮湿质感，写实悬疑场景，电影级细节，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch03-lv02 集装箱编号
+- 剧情节点：被雨冲刷的编号仍留下残片，侦探据此判断集装箱的顺序被人刻意调换过。
+- 正向提示词：夜间集装箱堆场，中景构图，多排不同颜色的集装箱被冷色工业灯照亮，部分编号被雨水冲刷得模糊不清，地面湿滑并反射橙蓝色灯光，画面重点突出前景几个编号异常的箱体和错位排列感，工业悬疑氛围，写实概念插画，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch03-lv03 甲板水痕
+- 剧情节点：甲板上积水的走向不合理，像是有人在雨中拖拽过沉重货物，并故意掩盖方向。
+- 正向提示词：货轮或码头平台甲板近景，木板或金属板表面布满雨水和反光，几道异常的拖拽水痕从一侧延伸到远处，周围还有积水形成的不规则水洼，环境受冷蓝灯光照射，重点表现水痕方向和拖拽痕迹，俯视或斜俯视构图，写实电影感，悬疑气氛，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch03-lv04 警戒灯塔
+- 剧情节点：最终的线索落在岸边灯塔，它不是目击点，而是交易双方用来校准时间的信号装置。
+- 正向提示词：海边灯塔在暴雨夜中发出暖黄色信号光，灯塔主体立于深蓝海岸和黑色礁石旁，雨丝斜落，海浪翻涌，灯光在雾气中形成可见光束，远处隐约可见码头设施轮廓，画面应兼具结局感和危险感，电影级写实悬疑环境插画，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+## ch04 倩女幽魂
+
+### 故事背景
+书生宁采臣夜宿荒山古寺，本以为只是借宿避雨，却在残破佛堂、幽深回廊和古井枯树之间，逐渐发现这里并非无人之地。女鬼聂小倩被树妖胁迫，以幻象迷惑过路人，而真正的生路藏在那些看似凄美的景物细节里：一盏不该亮的纸灯、一段被风吹起的红绫、一口倒映不出月色的古井，以及盘根错节、仿佛会呼吸的千年槐树。这个主题的核心不是单纯惊悚，而是“凄美、诡异、压抑与救赎并存”的东方聊斋式悬疑氛围。
+
+### 视觉关键词
+聊斋志异、兰若寺、夜色山寺、青绿色冷雾、红绫与纸灯、东方古典鬼魅美学
+
+### 章节封面提示词
+- 标题：倩女幽魂 章节封面
+- 正向提示词：深山夜色中的破败古寺，残檐断壁，山风卷起青雾，一盏昏黄纸灯在寺门前摇晃，远处可见模糊白衣女子背影和高大枯树轮廓，冷青月光与纸灯暖光交织，地面潮湿反光，整体呈现东方古典鬼魅美学，凄美而压抑，电影级环境叙事插画，写实概念美术，聊斋氛围，1:1 构图，适合做拼图封面
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+### 关卡提示词
+
+#### ch04-lv01 荒寺夜灯
+- 剧情节点：宁采臣初到古寺，只见大殿空无一人，唯有偏殿一盏纸灯在无风处微微摇晃，像是有人故意留给后来者的引路信号。
+- 正向提示词：荒废山寺内部，断裂梁柱和褪色佛像隐没在阴影中，偏殿门口悬着一盏昏黄纸灯，灯光照亮地面碎瓦、香灰与潮湿青石板，四周冷青色月光从破窗渗入，空气里有薄雾和尘埃，构图突出“黑暗古寺中唯一亮着的纸灯”，东方悬疑鬼魅气质，写实电影感，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch04-lv02 檐下红绫
+- 剧情节点：屋檐下垂落的一缕红绫被夜风吹起，像是有人刚刚从长廊尽头掠过，艳丽色彩与古寺死气形成强烈反差。
+- 正向提示词：古寺回廊尽头，破旧木梁与斑驳墙面被冷色月光覆盖，一段鲜红绫带从屋檐下垂落并被夜风吹起，地面散落落叶和旧木屑，远处长廊深处隐约有白色身影感但不清晰，画面重点是红绫与幽冷环境的对比，东方古典悬疑，凄美微恐，写实概念插画，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch04-lv03 古井月影
+- 剧情节点：寺后古井本该倒映月色，井中却只有浑浊暗水和一圈微微荡开的波纹，像是刚有什么东西从井边离开。
+- 正向提示词：荒寺后院，一口年代久远的石井位于画面中央，井沿长满青苔和裂纹，井水幽暗浑浊，没有映出天上的月光，只留下一圈细微涟漪，周围是碎石、枯草和低矮香炉残件，冷青夜色中带少量纸灯暖光反射，强调井水的不正常和东方志怪气息，电影级写实场景，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
+
+#### ch04-lv04 千年槐影
+- 剧情节点：真正控制一切的并非女鬼，而是寺外那棵盘根错节的千年槐树。树根下埋着枯骨与旧轿残片，黑暗中像一场未散的迎亲。
+- 正向提示词：古寺外的巨大槐树在夜雾中占据主体，树干扭曲如人形，盘根错节的树根从泥土中翻起，缠绕着残破木轿、褪色红布和零散白骨，冷青月光照亮树皮纹理，地面有潮湿泥土与薄雾，整体诡异但带东方古典美感，强调“树妖真身与鬼婚残迹”的叙事感，电影级写实悬疑插画，1:1
+- 负面提示词：lowres, blurry, deformed, duplicate objects, cropped subject, oversaturated, flat lighting, cartoon, chibi, anime face, text, logo, watermark, UI, subtitle, border, collage, split panel, multiple scenes in one image
