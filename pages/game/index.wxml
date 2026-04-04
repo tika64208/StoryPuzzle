@@ -9,11 +9,12 @@
 
   <view class="card summary-card">
     <view class="row-between">
-      <view class="card-title">操作说明</view>
+      <view class="card-title">入局规则</view>
       <view class="chip">{{level.sceneName}}</view>
     </view>
     <view class="card-desc">
-      {{level.introText}} 默认情况下，所有碎片都可以继续拖动，玩家不会直接知道哪块已经放对。只有消耗 1 个定格符后，当前已经归位的碎片才会被锁住。
+      {{level.introText}} 默认情况下，所有碎片都可以继续拖动，玩家不会直接知道哪块已经放对。消耗 1
+      个定格符后，当前已经归位的碎片会被锁住。消耗 1 个引路符后，会高亮一个更适合贴到当前最大拼块组旁边的碎片，帮助你更快破局。
     </view>
   </view>
 
@@ -22,6 +23,9 @@
       slots="{{slots}}"
       rows="{{level.rows}}"
       cols="{{level.cols}}"
+      guide-hint-piece-id="{{guideHintPieceId}}"
+      guide-hint-group-id="{{guideHintGroupId}}"
+      guide-hint-target-slot="{{guideHintTargetSlot}}"
       bind:groupdrop="handleGroupDrop"
       bind:lockedpieceblocked="handleLockedPieceBlocked"
     />
@@ -30,32 +34,35 @@
   <view wx:if="{{status !== 'success'}}" class="card controls-card">
     <view class="row-between">
       <view class="chip">移动次数 {{moves}}</view>
-      <view class="chip">剩余提示 {{hintsLeft}}</view>
+      <view class="chip">破局提示 {{hintsLeft}}</view>
     </view>
     <view class="row-between tools-row">
       <view class="chip">定格符 {{unlockDragTools}}</view>
+      <view class="chip">引路符 {{guideHintTools}}</view>
       <view class="chip">已定格 {{lockedPiecesCount}} 块</view>
     </view>
     <view class="control-grid">
-      <button class="secondary-btn" bindtap="handleHint">使用提示</button>
-      <button class="secondary-btn" bindtap="handleReset">重置拼图</button>
-      <button class="secondary-btn unlock-btn" bindtap="handleUseUnlockTool">消耗 1 个定格符</button>
+      <button class="secondary-btn" bindtap="handleHint">使用破局提示</button>
+      <button class="secondary-btn" bindtap="handleReset">重置谜境</button>
+      <button class="secondary-btn" bindtap="handleUseUnlockTool">消耗 1 个定格符</button>
+      <button class="secondary-btn" bindtap="handleUseGuideTool">消耗 1 个引路符</button>
     </view>
+    <view wx:if="{{guideHintText}}" class="guide-hint-note">{{guideHintText}}</view>
   </view>
 
   <view wx:if="{{status === 'success'}}" class="card success-card">
     <view class="row-between">
-      <view class="card-title">拼图完成</view>
-      <view class="chip">可以先欣赏图片</view>
+      <view class="card-title">谜境拼合完成</view>
+      <view class="chip">可以先欣赏整张图</view>
     </view>
-    <view class="card-desc">图片会停留在当前页面，不会立刻跳走。想继续时，再点下面的按钮查看结算。</view>
+    <view class="card-desc">图片会停留在当前页面，不会立刻跳转。想继续时，再点下面的按钮查看揭晓结果。</view>
     <image wx:if="{{previewImageSrc}}" class="success-image" src="{{previewImageSrc}}" mode="aspectFill"></image>
     <view class="stats-row">
       <view class="chip">剩余 {{timeText}}</view>
       <view class="chip">金币 +{{successCoins}}</view>
-      <view class="chip">星级 {{successStars}}</view>
+      <view class="chip">谜境评级 {{successStars}}</view>
     </view>
-    <button class="primary-btn action-gap" bindtap="handleOpenResult">查看结算</button>
+    <button class="primary-btn action-gap" bindtap="handleOpenResult">查看揭晓结果</button>
   </view>
 
   <revive-modal

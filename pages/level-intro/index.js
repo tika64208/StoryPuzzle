@@ -40,7 +40,7 @@ Page({
       if (!result.ok) {
         wx.showModal({
           title: '体力不足',
-          content: '当前体力不够进入这一关，先去个人中心签到或看广告补充体力。',
+          content: '当前体力不够进入这一段谜境，先去补给站签到或看广告补充体力。',
           confirmText: '去补体力',
           success: (res) => {
             if (res.confirm) {

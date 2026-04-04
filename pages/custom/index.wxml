@@ -1,26 +1,26 @@
 <view class="page-shell">
-  <view class="page-title">自定义拼图</view>
-  <view class="page-subtitle">默认已经帮你放好一张图片，可以直接生成关卡。你也可以随时改成相册里的其他照片。</view>
+  <view class="page-title">自定义谜境</view>
+  <view class="page-subtitle">默认已经帮你放好一张样图，可以直接生成谜境。你也可以随时换成相册里的其他照片。</view>
 
   <view class="card">
     <view class="row-between">
-      <view class="card-title">生成新关卡</view>
-      <view class="chip">{{isUsingDefaultImage ? '默认图片' : '相册图片'}}</view>
+      <view class="card-title">生成新谜境</view>
+      <view class="chip">{{isUsingDefaultImage ? '默认样图' : '相册图片'}}</view>
     </view>
     <view class="uploader" bindtap="handleChooseImage">
       <image wx:if="{{selectedImagePath}}" class="uploader-image" src="{{selectedImagePath}}" mode="aspectFill"></image>
       <view wx:else class="uploader-empty">
-        <view class="uploader-empty-title">默认图加载中</view>
-        <view class="uploader-empty-desc">如果默认图没显示，可以点下面按钮重新恢复或换成相册图片</view>
+        <view class="uploader-empty-title">默认样图加载中</view>
+        <view class="uploader-empty-desc">如果默认图没显示，可以点下面按钮重新恢复，或者换成相册照片</view>
       </view>
     </view>
     <view class="button-grid top-actions">
-      <button class="secondary-btn" bindtap="handleUseDefaultImage">使用默认图片</button>
-      <button class="secondary-btn" bindtap="handleChooseImage">改成相册图片</button>
-      <button class="primary-btn compact-btn" loading="{{generating}}" bindtap="handleCreateLevel">直接生成</button>
+      <button class="secondary-btn" bindtap="handleUseDefaultImage">使用默认样图</button>
+      <button class="secondary-btn" bindtap="handleChooseImage">改成相册照片</button>
+      <button class="primary-btn compact-btn" loading="{{generating}}" bindtap="handleCreateLevel">直接生成谜境</button>
     </view>
-    <view class="field-label">关卡名称</view>
-    <input class="text-input" value="{{draftTitle}}" maxlength="30" placeholder="给你的拼图起个名字" bindinput="handleTitleInput" />
+    <view class="field-label">谜境名称</view>
+    <input class="text-input" value="{{draftTitle}}" maxlength="30" placeholder="给你的谜境起个名字" bindinput="handleTitleInput" />
     <view class="field-label">切片规格</view>
     <picker range="{{layoutOptions}}" range-key="label" value="{{layoutIndex}}" bindchange="handleLayoutChange">
       <view class="picker-field">{{layoutOptions[layoutIndex].label}} · {{layoutOptions[layoutIndex].timeLimit}} 秒 · {{layoutOptions[layoutIndex].hints}} 次提示</view>
@@ -29,19 +29,19 @@
 
   <view class="card">
     <view class="row-between">
-      <view class="card-title">导入朋友挑战码</view>
+      <view class="card-title">导入好友谜境码</view>
       <view class="chip">复制粘贴</view>
     </view>
-    <view class="card-desc">朋友把挑战码发给你后，直接粘贴在这里就能恢复同一张图片关卡。</view>
-    <textarea class="code-input" maxlength="-1" value="{{importCode}}" placeholder="把朋友发来的挑战码粘贴到这里" bindinput="handleImportInput"></textarea>
+    <view class="card-desc">朋友把谜境码发给你后，直接粘贴在这里就能恢复同一张谜境图。</view>
+    <textarea class="code-input" maxlength="-1" value="{{importCode}}" placeholder="把朋友发来的谜境码粘贴到这里" bindinput="handleImportInput"></textarea>
     <view class="grid-two">
-      <button class="secondary-btn" bindtap="handlePasteCode">粘贴挑战码</button>
+      <button class="secondary-btn" bindtap="handlePasteCode">粘贴谜境码</button>
       <button class="secondary-btn" bindtap="handleImportCode">导入并保存</button>
     </view>
   </view>
 
-  <view class="section-title">我的关卡</view>
-  <view wx:if="{{customLevels.length === 0}}" class="empty-tip">还没有自定义关卡。现在直接点“直接生成”就会使用默认图片创建一关。</view>
+  <view class="section-title">我的谜境</view>
+  <view wx:if="{{customLevels.length === 0}}" class="empty-tip">还没有自定义谜境。现在直接点“直接生成谜境”就会使用默认样图创建第一关。</view>
 
   <block wx:for="{{customLevels}}" wx:key="levelId">
     <view class="card custom-level-card">
@@ -51,13 +51,13 @@
           <view class="card-title">{{item.title}}</view>
           <view class="card-desc">{{item.chapterTitle}} · {{item.rows}}x{{item.cols}} · {{item.timeLimit}} 秒</view>
           <view class="custom-meta">
-            {{item.completed ? ('已通关 · 星级 ' + item.stars + ' · 最少步数 ' + item.bestMoves) : '未通关'}}
+            {{item.completed ? ('已揭晓 · 谜境评级 ' + item.stars + ' · 最少步数 ' + item.bestMoves) : '未揭晓'}}
           </view>
         </view>
       </view>
       <view class="button-grid">
-        <button class="secondary-btn" data-level-id="{{item.levelId}}" bindtap="handlePlay">开始玩</button>
-        <button class="secondary-btn" data-level-id="{{item.levelId}}" bindtap="handleCopyCode">复制挑战码</button>
+        <button class="secondary-btn" data-level-id="{{item.levelId}}" bindtap="handlePlay">进入谜境</button>
+        <button class="secondary-btn" data-level-id="{{item.levelId}}" bindtap="handleCopyCode">复制谜境码</button>
         <button class="secondary-btn danger-btn" data-level-id="{{item.levelId}}" bindtap="handleDelete">删除</button>
       </view>
     </view>

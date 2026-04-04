@@ -27,7 +27,9 @@ function getEnvVersion() {
       return 'develop';
     }
     const accountInfo = wx.getAccountInfoSync();
-    return (accountInfo && accountInfo.miniProgram && accountInfo.miniProgram.envVersion) || 'develop';
+    const runtimeInfo =
+      (accountInfo && (accountInfo.miniProgram || accountInfo.miniGame)) || {};
+    return runtimeInfo.envVersion || 'develop';
   } catch (error) {
     return 'develop';
   }
@@ -48,6 +50,7 @@ function createDefaultProfile() {
     energyRecoverAt: 0,
     energyResetDate: formatDateKey(new Date()),
     unlockDragTools: runtime.defaultUnlockDragTools,
+    guideHintTools: runtime.defaultGuideHintTools,
     coins: 0,
     soundEnabled: true,
     currentLevelId: levelRepo.getFirstLevelId(),
@@ -77,6 +80,10 @@ function normalizeProfile(profile) {
     normalized.unlockDragTools = runtime.defaultUnlockDragTools;
   }
   normalized.unlockDragTools = Math.max(0, Math.floor(normalized.unlockDragTools));
+  if (typeof normalized.guideHintTools !== 'number' || Number.isNaN(normalized.guideHintTools)) {
+    normalized.guideHintTools = runtime.defaultGuideHintTools;
+  }
+  normalized.guideHintTools = Math.max(0, Math.floor(normalized.guideHintTools));
 
   if (typeof normalized.energyRecoverAt !== 'number' || Number.isNaN(normalized.energyRecoverAt)) {
     normalized.energyRecoverAt = 0;
@@ -279,6 +286,13 @@ function addUnlockDragTools(amount) {
   return clone(profile);
 }
 
+function addGuideHintTools(amount) {
+  const profile = getProfile();
+  profile.guideHintTools = Math.max(0, profile.guideHintTools + Math.max(0, Math.floor(amount || 0)));
+  saveProfile(profile);
+  return clone(profile);
+}
+
 function consumeUnlockDragTool(amount) {
   const cost = Math.max(1, Math.floor(amount || 1));
   const profile = getProfile();
@@ -290,6 +304,24 @@ function consumeUnlockDragTool(amount) {
   }
 
   profile.unlockDragTools -= cost;
+  saveProfile(profile);
+  return {
+    ok: true,
+    profile: clone(profile)
+  };
+}
+
+function consumeGuideHintTool(amount) {
+  const cost = Math.max(1, Math.floor(amount || 1));
+  const profile = getProfile();
+  if (profile.guideHintTools < cost) {
+    return {
+      ok: false,
+      profile
+    };
+  }
+
+  profile.guideHintTools -= cost;
   saveProfile(profile);
   return {
     ok: true,
@@ -387,6 +419,7 @@ function claimDailySignIn() {
   profile.lastSignInDate = today;
   profile.energy = Math.min(profile.maxEnergy, profile.energy + 3);
   profile.unlockDragTools += 1;
+  profile.guideHintTools += 1;
   profile.coins += 30;
 
   if (profile.energy >= profile.maxEnergy) {
@@ -405,6 +438,7 @@ function claimDailySignIn() {
     reward: {
       energy: 3,
       unlockDragTools: 1,
+      guideHintTools: 1,
       coins: 30
     }
   };
@@ -413,9 +447,11 @@ function claimDailySignIn() {
 module.exports = {
   addCoins,
   addEnergy,
+  addGuideHintTools,
   addUnlockDragTools,
   bootstrap,
   claimDailySignIn,
+  consumeGuideHintTool,
   consumeUnlockDragTool,
   consumeEnergy,
   getEnergyCountdownText,

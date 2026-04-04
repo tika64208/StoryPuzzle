@@ -1,0 +1,71 @@
+.tab-row {
+  display: flex;
+  gap: 18rpx;
+  flex-wrap: wrap;
+}
+
+.tab-chip {
+  padding: 14rpx 26rpx;
+  border-radius: 999rpx;
+  color: rgba(214, 236, 246, 0.76);
+  background: rgba(10, 30, 44, 0.38);
+  border: 1rpx solid rgba(122, 219, 224, 0.16);
+}
+
+.tab-chip-active {
+  color: #dffcff;
+  background: rgba(72, 173, 190, 0.24);
+  border-color: rgba(122, 219, 224, 0.44);
+  box-shadow: 0 0 26rpx rgba(108, 232, 255, 0.18);
+}
+
+.meta-row {
+  margin-top: 20rpx;
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.legal-paragraph {
+  margin-top: 18rpx;
+  color: rgba(214, 236, 246, 0.86);
+  line-height: 1.8;
+  font-size: 28rpx;
+}
+
+.stats-row {
+  margin-top: 20rpx;
+  display: flex;
+  gap: 16rpx;
+  flex-wrap: wrap;
+}
+
+.ready-chip {
+  color: #b8fff2;
+}
+
+.pending-chip {
+  color: #ffd7b5;
+}
+
+.check-item {
+  padding: 18rpx 0;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.08);
+}
+
+.check-item:first-of-type {
+  border-top: none;
+  padding-top: 0;
+}
+
+.check-label {
+  color: #e4f8ff;
+  font-size: 28rpx;
+}
+
+.check-detail {
+  margin-top: 10rpx;
+  color: rgba(214, 236, 246, 0.72);
+  line-height: 1.7;
+  font-size: 26rpx;
+}

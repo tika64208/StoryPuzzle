@@ -24,6 +24,63 @@ $scenes = @(
   @{ Id = 'ch03-lv04'; Name = 'Signal Lighthouse'; Colors = @('#08111d', '#14253f', '#314662', '#f5d07b') }
 )
 
+function Get-ExistingManifestMap {
+  param([string]$Path)
+
+  if (-not (Test-Path $Path)) {
+    return [ordered]@{}
+  }
+
+  $resolvedPath = (Resolve-Path $Path).Path
+  $json = & node -e "const data = require(require('path').resolve(process.argv[1])); process.stdout.write(JSON.stringify(data));" -- $resolvedPath 2>$null
+
+  if ([string]::IsNullOrWhiteSpace($json)) {
+    return [ordered]@{}
+  }
+
+  try {
+    $parsed = $json | ConvertFrom-Json
+    return ConvertTo-OrderedHashtable -Value $parsed
+  } catch {
+    Write-Warning "Unable to parse existing manifest, regenerating only current scenes."
+    return [ordered]@{}
+  }
+}
+
+function ConvertTo-OrderedHashtable {
+  param($Value)
+
+  if ($null -eq $Value) {
+    return $null
+  }
+
+  if ($Value -is [string] -or $Value -is [ValueType]) {
+    return $Value
+  }
+
+  if ($Value -is [System.Collections.IDictionary]) {
+    $map = [ordered]@{}
+    foreach ($key in $Value.Keys) {
+      $map[$key] = ConvertTo-OrderedHashtable -Value $Value[$key]
+    }
+    return $map
+  }
+
+  if ($Value -is [System.Collections.IEnumerable]) {
+    $list = @()
+    foreach ($item in $Value) {
+      $list += ,(ConvertTo-OrderedHashtable -Value $item)
+    }
+    return $list
+  }
+
+  $objectMap = [ordered]@{}
+  foreach ($property in $Value.PSObject.Properties) {
+    $objectMap[$property.Name] = ConvertTo-OrderedHashtable -Value $property.Value
+  }
+  return $objectMap
+}
+
 function New-ArgbColor {
   param(
     [Parameter(Mandatory = $true)][string]$Hex,
@@ -452,7 +509,12 @@ function Draw-Scene {
 
 New-Item -ItemType Directory -Path $outputDir -Force | Out-Null
 
+$existingManifestMap = Get-ExistingManifestMap -Path $manifestPath
 $manifestMap = [ordered]@{}
+
+foreach ($entry in $existingManifestMap.GetEnumerator()) {
+  $manifestMap[$entry.Key] = $entry.Value
+}
 
 foreach ($scene in $scenes) {
   $filePath = Join-Path $outputDir "$($scene.Id).png"

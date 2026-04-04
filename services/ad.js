@@ -1,4 +1,5 @@
 const runtime = require('../config/runtime');
+const logger = require('./logger');
 
 let rewardedVideoAd = null;
 
@@ -22,6 +23,10 @@ function getRewardedVideoAd() {
 }
 
 function showMockReward(scene) {
+  logger.trackEvent('ad_mock_show', {
+    scene
+  });
+
   return new Promise((resolve) => {
     wx.showModal({
       title: '激励广告占位',
@@ -29,6 +34,10 @@ function showMockReward(scene) {
       confirmText: '继续',
       cancelText: '取消',
       success(res) {
+        logger.trackEvent('ad_mock_close', {
+          scene,
+          granted: !!res.confirm
+        });
         resolve(!!res.confirm);
       }
     });
@@ -41,18 +50,30 @@ function showRewardedAction(scene) {
     return showMockReward(scene);
   }
 
+  logger.trackEvent('ad_rewarded_request', {
+    scene
+  });
+
   return new Promise((resolve) => {
     const closeHandler = (res) => {
       ad.offClose(closeHandler);
-      resolve(!res || !!res.isEnded);
+      const granted = !res || !!res.isEnded;
+      logger.trackEvent('ad_rewarded_close', {
+        scene,
+        granted
+      });
+      resolve(granted);
     };
 
     ad.onClose(closeHandler);
     ad
       .show()
       .catch(() => ad.load().then(() => ad.show()))
-      .catch(() => {
+      .catch((error) => {
         ad.offClose(closeHandler);
+        logger.captureError('ad_rewarded_fallback', error, {
+          scene
+        });
         showMockReward(scene).then(resolve);
       });
   });

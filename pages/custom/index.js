@@ -1,6 +1,7 @@
 const customLevels = require('../../services/custom-levels');
 const imageUtil = require('../../utils/image');
 const levelRepo = require('../../services/level-repo');
+const logger = require('../../services/logger');
 const storage = require('../../utils/storage');
 
 const DEFAULT_IMAGE_PATH = '/assets/default-custom.jpg';
@@ -15,7 +16,7 @@ const LAYOUT_OPTIONS = [
 ];
 
 function buildDefaultTitle() {
-  return `${DEFAULT_IMAGE_NAME}拼图`;
+  return `${DEFAULT_IMAGE_NAME}谜境`;
 }
 
 Page({
@@ -37,6 +38,7 @@ Page({
   },
 
   onShow() {
+    logger.trackEvent('custom_view');
     this.refresh();
     if (!this.data.selectedImagePath) {
       this.ensureSelectedImage(DEFAULT_IMAGE_PATH, true);
@@ -64,7 +66,7 @@ Page({
       },
       fail: () => {
         wx.showToast({
-          title: '默认图片加载失败',
+          title: '默认样图加载失败',
           icon: 'none'
         });
       }
@@ -78,12 +80,14 @@ Page({
       sourceType: ['album'],
       success: (res) => {
         const filePath = res.tempFilePaths[0];
+        logger.trackEvent('custom_choose_image');
         this.ensureSelectedImage(filePath, false);
       }
     });
   },
 
   handleUseDefaultImage() {
+    logger.trackEvent('custom_use_default_image');
     this.ensureSelectedImage(DEFAULT_IMAGE_PATH, true);
     this.setData({
       draftTitle: buildDefaultTitle()
@@ -115,7 +119,7 @@ Page({
 
     if (!this.data.selectedImagePath) {
       wx.showToast({
-        title: '请先选择一张图片',
+        title: '请先选一张照片',
         icon: 'none'
       });
       return;
@@ -129,7 +133,7 @@ Page({
       generating: true
     });
     wx.showLoading({
-      title: '生成关卡中'
+      title: '生成谜境中'
     });
 
     try {
@@ -170,6 +174,11 @@ Page({
 
       customLevels.upsertCustomLevel(level);
       storage.setCurrentLevel(level.levelId);
+      logger.trackEvent('custom_create_level_success', {
+        levelId: level.levelId,
+        rows: layout.rows,
+        cols: layout.cols
+      });
       this.setData({
         draftTitle: buildDefaultTitle(),
         generating: false
@@ -178,12 +187,15 @@ Page({
       this.refresh();
       wx.hideLoading();
       wx.showModal({
-        title: '关卡已生成',
-        content: '当前默认图片已经生成拼图关卡，可以自己玩，也可以复制挑战码分享给别人导入。',
-        confirmText: '立即开玩',
+        title: '谜境已生成',
+        content: '当前画面已经生成谜境关卡，可以自己入局，也可以复制谜境码分享给别人导入。',
+        confirmText: '立即入局',
         cancelText: '稍后',
         success: (res) => {
           if (res.confirm) {
+            logger.trackEvent('custom_create_level_enter_now', {
+              levelId: level.levelId
+            });
             wx.navigateTo({
               url: `/pages/level-intro/index?levelId=${level.levelId}`
             });
@@ -195,6 +207,7 @@ Page({
       this.setData({
         generating: false
       });
+      logger.captureError('custom_create_level', error);
       wx.showToast({
         title: error.message || '生成失败',
         icon: 'none'
@@ -204,6 +217,9 @@ Page({
 
   handlePlay(event) {
     const levelId = event.currentTarget.dataset.levelId;
+    logger.trackEvent('custom_play_level', {
+      levelId
+    });
     wx.navigateTo({
       url: `/pages/level-intro/index?levelId=${levelId}`
     });
@@ -216,14 +232,20 @@ Page({
       wx.setClipboardData({
         data: code,
         success: () => {
+          logger.trackEvent('custom_copy_code', {
+            levelId
+          });
           wx.showModal({
-            title: '挑战码已复制',
-            content: '把这串挑战码发给朋友，对方在这里粘贴导入后，就能玩同一张图片关卡。',
+            title: '谜境码已复制',
+            content: '把这串谜境码发给朋友，对方在这里粘贴导入后，就能进入同一张谜境图。',
             showCancel: false
           });
         }
       });
     } catch (error) {
+      logger.captureError('custom_copy_code', error, {
+        levelId
+      });
       wx.showToast({
         title: error.message || '复制失败',
         icon: 'none'
@@ -240,8 +262,8 @@ Page({
 
     const res = await new Promise((resolve) => {
       wx.showModal({
-        title: '删除自定义关卡',
-        content: '删除后会移除本地图片和关卡配置，但不会影响已经发出去的挑战码。',
+        title: '删除自定义谜境',
+        content: '删除后会移除本地样图和谜境配置，但不会影响已经发出去的谜境码。',
         success: resolve
       });
     });
@@ -254,6 +276,9 @@ Page({
     if (removed && removed.customMeta) {
       imageUtil.removeFileSafe(removed.customMeta.imagePath);
     }
+    logger.trackEvent('custom_delete_level', {
+      levelId
+    });
     this.refresh();
     wx.showToast({
       title: '已删除',
@@ -275,14 +300,14 @@ Page({
     const rawCode = (this.data.importCode || '').trim();
     if (!rawCode) {
       wx.showToast({
-        title: '先粘贴挑战码',
+        title: '先粘贴谜境码',
         icon: 'none'
       });
       return;
     }
 
     wx.showLoading({
-      title: '导入中'
+      title: '导入谜境中'
     });
 
     try {
@@ -290,7 +315,7 @@ Page({
       const createdAt = Date.now();
       const imagePath = imageUtil.writeBase64ToFile(payload.b, `imported_level_${createdAt}`);
       const level = customLevels.buildCustomLevel({
-        title: payload.i || `好友拼图 ${createdAt}`,
+        title: payload.i || `好友谜境 ${createdAt}`,
         rows: payload.r,
         cols: payload.c,
         timeLimit: payload.t,
@@ -303,6 +328,11 @@ Page({
       });
 
       customLevels.upsertCustomLevel(level);
+      logger.trackEvent('custom_import_code_success', {
+        levelId: level.levelId,
+        rows: payload.r,
+        cols: payload.c
+      });
       this.setData({
         importCode: ''
       });
@@ -310,11 +340,14 @@ Page({
       wx.hideLoading();
       wx.showModal({
         title: '导入成功',
-        content: '挑战图已经保存到你的自定义列表，现在就可以开始玩。',
-        confirmText: '立即开玩',
+        content: '谜境已经保存到你的自定义列表，现在就可以入局。',
+        confirmText: '立即入局',
         cancelText: '稍后',
         success: (res) => {
           if (res.confirm) {
+            logger.trackEvent('custom_import_enter_now', {
+              levelId: level.levelId
+            });
             wx.navigateTo({
               url: `/pages/level-intro/index?levelId=${level.levelId}`
             });
@@ -323,6 +356,7 @@ Page({
       });
     } catch (error) {
       wx.hideLoading();
+      logger.captureError('custom_import_code', error);
       wx.showToast({
         title: error.message || '导入失败',
         icon: 'none'

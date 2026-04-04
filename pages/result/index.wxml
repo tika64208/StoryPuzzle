@@ -1,9 +1,9 @@
 <view class="page-shell">
-  <view class="page-title">{{success ? '线索拼回来了' : '线索中断了'}}</view>
-  <view class="page-subtitle">{{success ? level.outroText : '这次差一点就成功，可以重来一次或者稍后再战。'}}</view>
+  <view class="page-title">{{success ? '谜境已经拼合' : '谜境暂未揭晓'}}</view>
+  <view class="page-subtitle">{{success ? level.outroText : '这次只差一点就能把整张图拼回完整，可以马上再试一次。'}}</view>
 
   <view class="card result-card">
-    <view class="result-badge {{success ? 'success' : 'fail'}}">{{success ? '成功通关' : '挑战失败'}}</view>
+    <view class="result-badge {{success ? 'success' : 'fail'}}">{{success ? '谜境揭晓' : '谜境未解'}}</view>
     <view class="card-title result-title">{{level.chapterTitle}} · {{level.title}}</view>
     <view class="stats-grid">
       <view class="stats-cell">
@@ -19,16 +19,16 @@
         <view class="stats-value">{{coins}}</view>
       </view>
       <view class="stats-cell">
-        <view class="stats-label">星级</view>
+        <view class="stats-label">谜境评级</view>
         <view class="stats-value">{{stars}}</view>
       </view>
     </view>
-    <view class="card-desc">当前余额 {{profile.coins}} 金币，体力 {{profile.energy}} / {{profile.maxEnergy}}</view>
-    <button class="primary-btn action-gap" bindtap="handleRetry">{{success ? '再刷一次' : '重新挑战'}}</button>
+    <view class="card-desc">当前余额 {{profile.coins}} 金币，体力 {{profile.energy}} / {{profile.maxEnergy}}，准备好就继续下一段谜境。</view>
+    <button class="primary-btn action-gap" bindtap="handleRetry">{{success ? '再入一次' : '重新入局'}}</button>
     <view class="grid-two">
-      <button class="secondary-btn" bindtap="handleNext">{{nextLevel ? '下一关' : (level.isCustom ? '返回自定义中心' : '查看章节')}}</button>
+      <button class="secondary-btn" bindtap="handleNext">{{nextLevel ? '下一段谜境' : (level.isCustom ? '返回自定义中心' : '查看谜境章节')}}</button>
       <button class="secondary-btn" bindtap="handleHome">返回首页</button>
     </view>
-    <button wx:if="{{level.isCustom}}" class="secondary-btn share-btn" bindtap="handleCopyChallenge">复制挑战码分享给朋友</button>
+    <button wx:if="{{level.isCustom}}" class="secondary-btn share-btn" bindtap="handleCopyChallenge">复制挑战码分享谜境</button>
   </view>
 </view>

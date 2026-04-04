@@ -1,5 +1,5 @@
 {
-  "navigationBarTitleText": "关卡挑战",
+  "navigationBarTitleText": "谜境入局",
   "usingComponents": {
     "top-bar": "/components/top-bar/index",
     "puzzle-board": "/components/puzzle-board/index",

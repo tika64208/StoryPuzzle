@@ -27,21 +27,21 @@ function createLevelId(prefix) {
 function buildCustomLevel(options) {
   const createdAt = options.createdAt || Date.now();
   const levelId = options.levelId || createLevelId(options.sourceType === 'imported' ? 'shared' : 'custom');
-  const chapterTitle = options.sourceType === 'imported' ? '朋友分享' : '我的拼图';
+  const chapterTitle = options.sourceType === 'imported' ? '好友谜境' : '我的谜境';
   const totalPieces = options.rows * options.cols;
-  const sceneName = options.sourceType === 'imported' ? '好友挑战图' : '相册拼图';
+  const sceneName = options.sourceType === 'imported' ? '好友谜境图' : '相册谜境图';
 
   return {
     levelId,
     chapterId: options.sourceType === 'imported' ? 'custom-shared' : 'custom-local',
     chapterTitle,
-    title: options.title || `自定义拼图 ${new Date(createdAt).toLocaleDateString()}`,
+    title: options.title || `自定义谜境 ${new Date(createdAt).toLocaleDateString()}`,
     introText:
       options.introText ||
       (options.sourceType === 'imported'
-        ? '这是朋友分享给你的挑战图，拼回完整图片后看看能用几步完成。'
-        : '这张图片来自你的相册，系统已经自动裁切并生成可玩的拼图关卡。'),
-    outroText: options.outroText || '完整画面已经恢复，你可以继续刷更短时间或更少步数。',
+        ? '这是朋友分享给你的谜境图，拼回完整图片后看看能用几步完成。'
+        : '这张图片来自你的相册，系统已经自动裁切并生成可玩的谜境关卡。'),
+    outroText: options.outroText || '完整画面已经恢复，你可以继续挑战更短时间或更少步数。',
     clueTag: options.clueTag || (options.sourceType === 'imported' ? '好友分享' : '自定义'),
     sceneName,
     sceneStyle: normalizeImageStyle(options.imagePath),
@@ -100,11 +100,11 @@ function removeCustomLevel(levelId) {
 function buildChallengeCode(levelId) {
   const level = getCustomLevelById(levelId);
   if (!level) {
-    throw new Error('未找到要分享的关卡');
+    throw new Error('未找到要分享的谜境');
   }
 
   if (!level.customMeta || !level.customMeta.shareImageBase64) {
-    throw new Error('当前关卡缺少可分享的图片数据');
+    throw new Error('当前谜境缺少可分享的图片数据');
   }
 
   const payload = {
@@ -124,7 +124,7 @@ function buildChallengeCode(levelId) {
 function parseChallengeCode(code) {
   const raw = String(code || '').trim();
   if (!raw) {
-    throw new Error('挑战码为空');
+    throw new Error('谜境码为空');
   }
 
   const body = raw.startsWith(CHALLENGE_CODE_PREFIX)
@@ -135,7 +135,7 @@ function parseChallengeCode(code) {
   try {
     payload = JSON.parse(body);
   } catch (error) {
-    throw new Error('挑战码格式不正确');
+    throw new Error('谜境码格式不正确');
   }
 
   if (
@@ -146,7 +146,7 @@ function parseChallengeCode(code) {
     typeof payload.h !== 'number' ||
     typeof payload.b !== 'string'
   ) {
-    throw new Error('挑战码缺少必要字段');
+    throw new Error('谜境码缺少必要字段');
   }
 
   return payload;

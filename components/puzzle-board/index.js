@@ -14,6 +14,18 @@ Component({
     cols: {
       type: Number,
       value: 3
+    },
+    guideHintPieceId: {
+      type: Number,
+      value: 0
+    },
+    guideHintGroupId: {
+      type: String,
+      value: ''
+    },
+    guideHintTargetSlot: {
+      type: Number,
+      value: 0
     }
   },
   data: {

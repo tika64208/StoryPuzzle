@@ -1,7 +1,7 @@
 {
-  "appid": "wxb85fd1517d29529a",
-  "projectname": "mystery-puzzle-miniapp",
-  "compileType": "miniprogram",
+  "appid": "wxa1fb6e395f1b7cdf",
+  "projectname": "mijing-puzzle",
+  "compileType": "game",
   "miniprogramRoot": "./",
   "setting": {
     "es6": true,
@@ -37,6 +37,14 @@
     "ignore": [
       {
         "type": "folder",
+        "value": "pages"
+      },
+      {
+        "type": "folder",
+        "value": "components"
+      },
+      {
+        "type": "folder",
         "value": "exports"
       },
       {
@@ -49,7 +57,27 @@
       },
       {
         "type": "file",
-        "value": "微信图片_20260404132028.jpg"
+        "value": "MINIGAME_MIGRATION.md"
+      },
+      {
+        "type": "file",
+        "value": "RELEASE_CHECKLIST.md"
+      },
+      {
+        "type": "file",
+        "value": "app.js"
+      },
+      {
+        "type": "file",
+        "value": "app.json"
+      },
+      {
+        "type": "file",
+        "value": "app.wxss"
+      },
+      {
+        "type": "file",
+        "value": "sitemap.json"
       }
     ],
     "include": []

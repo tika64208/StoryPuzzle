@@ -6,10 +6,11 @@
     "pages/level-intro/index",
     "pages/game/index",
     "pages/result/index",
-    "pages/center/index"
+    "pages/center/index",
+    "pages/legal/index"
   ],
   "window": {
-    "navigationBarTitleText": "悬疑线索拼图",
+    "navigationBarTitleText": "谜境拼图",
     "navigationBarTextStyle": "white",
     "navigationBarBackgroundColor": "#0b2234",
     "backgroundColor": "#06131f",

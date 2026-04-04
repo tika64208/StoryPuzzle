@@ -1,5 +1,5 @@
 const GLOBAL_PRESET = {
-  projectName: '悬疑线索拼图',
+  projectName: '谜境拼图',
   useCase: '为微信拼图小程序生成章节封面图和关卡场景图',
   recommendedAspectRatio: '1:1',
   recommendedResolution: '1024x1024 或 1536x1536',

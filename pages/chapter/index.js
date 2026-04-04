@@ -25,7 +25,7 @@ Page({
     const unlocked = rawUnlocked === true || rawUnlocked === 'true';
     if (!unlocked) {
       wx.showToast({
-        title: '先完成前置关卡',
+        title: '先解开前一关谜境',
         icon: 'none'
       });
       return;

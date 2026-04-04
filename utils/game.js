@@ -183,6 +183,195 @@ function recomputeGroups(level, state) {
   return groups;
 }
 
+function buildAssembledGroups(level, state) {
+  const pieceIds = Object.keys(state.pieces).map((pieceId) => Number(pieceId));
+  const adjacency = {};
+  pieceIds.forEach((pieceId) => {
+    adjacency[pieceId] = [];
+  });
+
+  const total = level.rows * level.cols;
+  for (let slot = 1; slot <= total; slot += 1) {
+    const pieceAId = state.slots[slot];
+    const pieceA = state.pieces[pieceAId];
+    if (!pieceA) {
+      continue;
+    }
+
+    const coords = slotToRowCol(slot, level.cols);
+    if (coords.col < level.cols - 1) {
+      const pieceBId = state.slots[slot + 1];
+      const pieceB = state.pieces[pieceBId];
+      if (pieceB && areNeighborOffsetsEqual(pieceA, pieceB, level.cols)) {
+        adjacency[pieceAId].push(pieceBId);
+        adjacency[pieceBId].push(pieceAId);
+      }
+    }
+
+    if (coords.row < level.rows - 1) {
+      const pieceBId = state.slots[slot + level.cols];
+      const pieceB = state.pieces[pieceBId];
+      if (pieceB && areNeighborOffsetsEqual(pieceA, pieceB, level.cols)) {
+        adjacency[pieceAId].push(pieceBId);
+        adjacency[pieceBId].push(pieceAId);
+      }
+    }
+  }
+
+  const visited = {};
+  const groups = [];
+
+  pieceIds.forEach((pieceId) => {
+    if (visited[pieceId]) {
+      return;
+    }
+
+    const stack = [pieceId];
+    const component = [];
+    visited[pieceId] = true;
+
+    while (stack.length > 0) {
+      const currentId = stack.pop();
+      component.push(currentId);
+      adjacency[currentId].forEach((neighborId) => {
+        if (!visited[neighborId]) {
+          visited[neighborId] = true;
+          stack.push(neighborId);
+        }
+      });
+    }
+
+    component.sort((left, right) => left - right);
+    groups.push({
+      id: `assembled_${component[0]}`,
+      pieceIds: component,
+      size: component.length
+    });
+  });
+
+  groups.sort((left, right) => right.size - left.size || left.pieceIds[0] - right.pieceIds[0]);
+  return groups;
+}
+
+function areCorrectNeighbors(pieceA, pieceB, cols) {
+  const correctA = slotToRowCol(pieceA.correctSlot, cols);
+  const correctB = slotToRowCol(pieceB.correctSlot, cols);
+  return Math.abs(correctA.row - correctB.row) + Math.abs(correctA.col - correctB.col) === 1;
+}
+
+function getDirectionLabel(rowOffset, colOffset) {
+  if (rowOffset === -1) {
+    return '上方';
+  }
+  if (rowOffset === 1) {
+    return '下方';
+  }
+  if (colOffset === -1) {
+    return '左侧';
+  }
+  return '右侧';
+}
+
+function buildGuideHintForGroup(level, state, group) {
+  if (!group || !group.pieceIds || group.pieceIds.length === 0) {
+    return null;
+  }
+
+  const groupPieceLookup = {};
+  group.pieceIds.forEach((pieceId) => {
+    groupPieceLookup[pieceId] = true;
+  });
+
+  let bestHint = null;
+  const pieceIds = Object.keys(state.pieces).map((pieceId) => Number(pieceId));
+  pieceIds.forEach((pieceId) => {
+    if (groupPieceLookup[pieceId]) {
+      return;
+    }
+
+    const piece = state.pieces[pieceId];
+    if (!piece || piece.locked) {
+      return;
+    }
+
+    const pieceGroup = state.groups[piece.groupId];
+    const pieceGroupSize = pieceGroup ? pieceGroup.pieceIds.length : 1;
+    const currentCoords = slotToRowCol(piece.currentSlot, level.cols);
+
+    group.pieceIds.forEach((anchorId) => {
+      const anchorPiece = state.pieces[anchorId];
+      if (!anchorPiece || !areCorrectNeighbors(piece, anchorPiece, level.cols)) {
+        return;
+      }
+
+      const pieceCorrect = slotToRowCol(piece.correctSlot, level.cols);
+      const anchorCorrect = slotToRowCol(anchorPiece.correctSlot, level.cols);
+      const rowOffset = pieceCorrect.row - anchorCorrect.row;
+      const colOffset = pieceCorrect.col - anchorCorrect.col;
+
+      const anchorCurrent = slotToRowCol(anchorPiece.currentSlot, level.cols);
+      const targetRow = anchorCurrent.row + rowOffset;
+      const targetCol = anchorCurrent.col + colOffset;
+
+      if (
+        targetRow < 0 ||
+        targetRow >= level.rows ||
+        targetCol < 0 ||
+        targetCol >= level.cols
+      ) {
+        return;
+      }
+
+      const targetSlot = rowColToSlot(targetRow, targetCol, level.cols);
+      const occupantPieceId = state.slots[targetSlot];
+      if (
+        occupantPieceId &&
+        occupantPieceId !== piece.id &&
+        state.pieces[occupantPieceId] &&
+        state.pieces[occupantPieceId].locked
+      ) {
+        return;
+      }
+
+      const distance =
+        Math.abs(currentCoords.row - targetRow) + Math.abs(currentCoords.col - targetCol);
+      const candidate = {
+        pieceId: piece.id,
+        targetSlot,
+        clusterSize: group.size,
+        pieceGroupSize,
+        directionLabel: getDirectionLabel(rowOffset, colOffset),
+        distance
+      };
+
+      if (
+        !bestHint ||
+        candidate.pieceGroupSize < bestHint.pieceGroupSize ||
+        (candidate.pieceGroupSize === bestHint.pieceGroupSize && candidate.distance < bestHint.distance) ||
+        (candidate.pieceGroupSize === bestHint.pieceGroupSize &&
+          candidate.distance === bestHint.distance &&
+          candidate.pieceId < bestHint.pieceId)
+      ) {
+        bestHint = candidate;
+      }
+    });
+  });
+
+  return bestHint;
+}
+
+function getGuideHint(level, state) {
+  recomputeGroups(level, state);
+  const assembledGroups = buildAssembledGroups(level, state);
+  for (let index = 0; index < assembledGroups.length; index += 1) {
+    const hint = buildGuideHintForGroup(level, state, assembledGroups[index]);
+    if (hint) {
+      return hint;
+    }
+  }
+  return null;
+}
+
 function createInitialState(level) {
   const total = level.rows * level.cols;
   const slotPieces = buildShuffledSlots(total, level.seed);
@@ -617,6 +806,7 @@ module.exports = {
   autoPlaceOne,
   buildRenderSlots,
   createInitialState,
+  getGuideHint,
   getLockableCorrectPieceIds,
   isComplete,
   lockCorrectPieces,

@@ -11,7 +11,7 @@
       catchtouchcancel="handleTouchEnd"
     >
       <view
-        class="piece {{draggingGroupId === item.groupId ? 'piece-dragging piece-glowing' : ''}}"
+        class="piece {{draggingGroupId === item.groupId ? 'piece-dragging piece-glowing' : ''}} {{guideHintGroupId && guideHintGroupId === item.groupId ? 'piece-guide-group' : ''}} {{guideHintPieceId === item.pieceId ? 'piece-guide' : ''}}"
         style="{{draggingGroupId === item.groupId ? activeTransformStyle : ''}}"
       >
         <image
@@ -29,6 +29,9 @@
           <view wx:if="{{item.outline.bottom}}" class="outline-edge outline-bottom"></view>
           <view wx:if="{{item.outline.left}}" class="outline-edge outline-left"></view>
         </view>
+        <view wx:if="{{guideHintPieceId === item.pieceId}}" class="piece-guide-outline"></view>
+        <view wx:if="{{guideHintGroupId && guideHintGroupId === item.groupId}}" class="piece-guide-group-outline"></view>
+        <view wx:if="{{guideHintTargetSlot === item.slotIndex}}" class="slot-guide-target"></view>
       </view>
     </view>
   </block>

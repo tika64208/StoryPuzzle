@@ -1,4 +1,5 @@
 const levelRepo = require('../../services/level-repo');
+const logger = require('../../services/logger');
 const storage = require('../../utils/storage');
 
 const CHAPTER_PRESENTATION = {
@@ -23,13 +24,13 @@ const CHAPTER_PRESENTATION = {
     badge: '港口迷局'
   },
   'custom-local': {
-    title: '我的拼图',
+    title: '我的谜境',
     summary: '把相册里的照片切成关卡，保存下来随时继续玩。',
-    badge: '自定义'
+    badge: '自定义谜境'
   },
   'custom-shared': {
-    title: '朋友分享',
-    summary: '把朋友发来的挑战码导入进来，玩同一张图。',
+    title: '好友谜境',
+    summary: '把朋友发来的挑战码导入进来，一起玩同一张图。',
     badge: '分享关卡'
   }
 };
@@ -153,6 +154,7 @@ Page({
   },
 
   onShow() {
+    logger.trackEvent('home_view');
     this.refresh();
     this.startEnergyTicker();
   },
@@ -227,24 +229,30 @@ Page({
       return;
     }
 
+    logger.trackEvent('home_continue', {
+      levelId: level.levelId
+    });
     wx.navigateTo({
       url: `/pages/level-intro/index?levelId=${level.levelId}`
     });
   },
 
   handleBrowse() {
+    logger.trackEvent('home_open_chapter');
     wx.navigateTo({
       url: '/pages/chapter/index'
     });
   },
 
   handleCustom() {
+    logger.trackEvent('home_open_custom');
     wx.navigateTo({
       url: '/pages/custom/index'
     });
   },
 
   handleCenter() {
+    logger.trackEvent('home_open_center');
     wx.navigateTo({
       url: '/pages/center/index'
     });
@@ -253,10 +261,14 @@ Page({
   handleLatestCustom() {
     const latest = this.data.customSummary.latest;
     if (!latest) {
+      logger.trackEvent('home_open_custom_from_empty_latest');
       this.handleCustom();
       return;
     }
 
+    logger.trackEvent('home_open_latest_custom', {
+      levelId: latest.levelId
+    });
     wx.navigateTo({
       url: `/pages/level-intro/index?levelId=${latest.levelId}`
     });

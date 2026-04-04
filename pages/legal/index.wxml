@@ -1,0 +1,80 @@
+<view class="page-shell">
+  <view class="page-title">{{title}}</view>
+  <view class="page-subtitle">{{appName}} 的隐私、协议与发布配置都集中在这里，方便提审前统一核对。</view>
+
+  <view class="card">
+    <view class="tab-row">
+      <view
+        wx:for="{{tabs}}"
+        wx:key="key"
+        class="tab-chip {{activeType === item.key ? 'tab-chip-active' : ''}}"
+        data-type="{{item.key}}"
+        bindtap="handleTabChange"
+      >
+        {{item.label}}
+      </view>
+    </view>
+    <view class="meta-row">
+      <view class="chip">生效日期 {{effectiveDate}}</view>
+      <view class="chip">品牌 {{appName}}</view>
+    </view>
+  </view>
+
+  <block wx:if="{{activeType !== 'release'}}">
+    <view class="card">
+      <view class="row-between">
+        <view class="card-title">联系信息</view>
+        <button class="secondary-btn compact-btn" bindtap="handleCopyContact">复制联系信息</button>
+      </view>
+      <view class="card-desc">主体：{{companyName}}</view>
+      <view class="card-desc">邮箱：{{contactEmail}}</view>
+      <view class="card-desc">客服：{{supportWechat}}</view>
+    </view>
+
+    <block wx:for="{{sections}}" wx:key="title">
+      <view class="card">
+        <view class="card-title">{{item.title}}</view>
+        <view wx:for="{{item.paragraphs}}" wx:key="*this" class="legal-paragraph">{{item}}</view>
+      </view>
+    </block>
+  </block>
+
+  <block wx:if="{{activeType === 'release'}}">
+    <view class="card">
+      <view class="row-between">
+        <view class="card-title">检查汇总</view>
+        <view class="chip">{{releaseSummary.ready}} / {{releaseSummary.total}} 已就绪</view>
+      </view>
+      <view class="stats-row">
+        <view class="chip ready-chip">已就绪 {{releaseSummary.ready}}</view>
+        <view class="chip pending-chip">待补齐 {{releaseSummary.pending}}</view>
+      </view>
+    </view>
+
+    <view class="card">
+      <view class="card-title">待补齐</view>
+      <view wx:if="{{releasePendingItems.length === 0}}" class="card-desc">当前没有待补齐项，可以继续走提审和发布流程。</view>
+      <block wx:for="{{releasePendingItems}}" wx:key="label">
+        <view class="check-item">
+          <view class="check-label">[待补齐] {{item.label}}</view>
+          <view class="check-detail">{{item.detail}}</view>
+        </view>
+      </block>
+    </view>
+
+    <view class="card">
+      <view class="card-title">已就绪</view>
+      <block wx:for="{{releaseReadyItems}}" wx:key="label">
+        <view class="check-item">
+          <view class="check-label">[已就绪] {{item.label}}</view>
+          <view class="check-detail">{{item.detail}}</view>
+        </view>
+      </block>
+    </view>
+
+    <view class="card">
+      <view class="card-title">发布提醒</view>
+      <view wx:for="{{releaseTips}}" wx:key="*this" class="legal-paragraph">{{item}}</view>
+    </view>
+  </block>
+</view>

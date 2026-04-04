@@ -2,6 +2,7 @@ const levelRepo = require('../../services/level-repo');
 const gameEngine = require('../../utils/game');
 const storage = require('../../utils/storage');
 const adService = require('../../services/ad');
+const logger = require('../../services/logger');
 
 function formatTime(timeLeft) {
   const safeTime = Math.max(timeLeft, 0);
@@ -32,6 +33,15 @@ function countLockedPieces(slots) {
   return (slots || []).filter((item) => item && item.locked).length;
 }
 
+function buildGuideHintText(hint) {
+  if (!hint) {
+    return '';
+  }
+
+  const pieceLabel = hint.pieceGroupSize > 1 ? '高亮碎片所在的小拼块组' : '高亮碎片';
+  return `试着把${pieceLabel}拖到发光目标位，贴到当前最大拼块组的${hint.directionLabel}。`;
+}
+
 Page({
   data: {
     level: null,
@@ -42,7 +52,12 @@ Page({
     hintsLeft: 0,
     energy: 0,
     unlockDragTools: 0,
+    guideHintTools: 0,
     lockedPiecesCount: 0,
+    guideHintPieceId: 0,
+    guideHintGroupId: '',
+    guideHintTargetSlot: 0,
+    guideHintText: '',
     status: 'loading',
     showRevive: false,
     reviveSeconds: 15,
@@ -55,8 +70,9 @@ Page({
   onLoad(options) {
     const level = levelRepo.getLevelById(options.levelId || '');
     if (!level) {
+      logger.captureError('game_level_missing', new Error('Level not found'), options);
       wx.showToast({
-        title: '关卡不存在',
+        title: '谜境不存在',
         icon: 'none'
       });
       wx.navigateBack();
@@ -74,10 +90,17 @@ Page({
       timeText: formatTime(level.timeLimit),
       energy: profile.energy,
       unlockDragTools: profile.unlockDragTools || 0,
+      guideHintTools: profile.guideHintTools || 0,
       status: 'playing',
       previewImageSrc: resolvePreviewImage(level)
     });
 
+    logger.trackEvent('game_start', {
+      levelId: level.levelId,
+      rows: level.rows,
+      cols: level.cols,
+      custom: !!level.isCustom
+    });
     this.refreshBoard();
     this.startTimer();
   },
@@ -131,8 +154,18 @@ Page({
     const profile = storage.getProfile();
     this.setData({
       energy: profile.energy,
-      unlockDragTools: profile.unlockDragTools || 0
+      unlockDragTools: profile.unlockDragTools || 0,
+      guideHintTools: profile.guideHintTools || 0
     });
+  },
+
+  clearGuideHint(callback) {
+    this.setData({
+      guideHintPieceId: 0,
+      guideHintGroupId: '',
+      guideHintTargetSlot: 0,
+      guideHintText: ''
+    }, callback);
   },
 
   handleGroupDrop(event) {
@@ -152,6 +185,7 @@ Page({
       return;
     }
 
+    this.clearGuideHint();
     this.refreshBoard();
 
     if (gameEngine.isComplete(this.gameState)) {
@@ -178,7 +212,7 @@ Page({
     const lockableIds = gameEngine.getLockableCorrectPieceIds(this.gameState);
     if (lockableIds.length === 0) {
       wx.showToast({
-        title: '当前还没有可锁定的正确碎片',
+        title: '当前还没有可定格的正确碎片',
         icon: 'none'
       });
       return;
@@ -187,7 +221,7 @@ Page({
     const consumeResult = storage.consumeUnlockDragTool(1);
     if (!consumeResult.ok) {
       wx.showToast({
-        title: '定格符不足，请先去个人中心补充',
+        title: '定格符不足，请先去补给站补充',
         icon: 'none'
       });
       return;
@@ -197,11 +231,73 @@ Page({
     this.setData({
       unlockDragTools: consumeResult.profile.unlockDragTools || 0
     });
+    logger.trackEvent('game_use_unlock_tool', {
+      levelId: this.level.levelId,
+      lockedCount: lockedPieceIds.length
+    });
+    this.clearGuideHint();
     this.refreshBoard();
 
     wx.showToast({
       title: `已定格 ${lockedPieceIds.length} 块正确碎片`,
       icon: 'none'
+    });
+    logger.trackEvent('game_use_guide_tool', {
+      levelId: this.level.levelId,
+      pieceId: hint.pieceId,
+      targetSlot: hint.targetSlot
+    });
+  },
+
+  handleUseGuideTool() {
+    if (this.data.status !== 'playing') {
+      return;
+    }
+
+    const hint = gameEngine.getGuideHint(this.level, this.gameState);
+    if (!hint) {
+      wx.showToast({
+        title: '当前没有合适的破局提示',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const consumeResult = storage.consumeGuideHintTool(1);
+    if (!consumeResult.ok) {
+      wx.showToast({
+        title: '引路符不足，请先去补给站补充',
+        icon: 'none'
+      });
+      return;
+    }
+
+    const piece = this.gameState.pieces[hint.pieceId];
+    const guideHintGroupId = piece ? piece.groupId : '';
+
+    this.clearGuideHint(() => {
+      this.setData({
+        guideHintTools: consumeResult.profile.guideHintTools || 0,
+        guideHintPieceId: hint.pieceId,
+        guideHintGroupId,
+        guideHintTargetSlot: hint.targetSlot,
+        guideHintText: buildGuideHintText(hint)
+      });
+
+      if (wx.vibrateShort) {
+        try {
+          wx.vibrateShort({
+            type: 'light'
+          });
+        } catch (error) {
+          // Ignore unsupported vibration environments.
+        }
+      }
+
+      wx.showToast({
+        title: '已标出破局碎片',
+        icon: 'none'
+      });
     });
   },
 
@@ -214,12 +310,17 @@ Page({
       const fixedPieceId = gameEngine.autoPlaceOne(this.level, this.gameState);
       if (!fixedPieceId) {
         wx.showToast({
-          title: '已经非常接近完成了',
+          title: '已经非常接近揭晓了',
           icon: 'none'
         });
         return;
       }
 
+      logger.trackEvent('game_use_hint', {
+        levelId: this.level.levelId,
+        fixedPieceId
+      });
+      this.clearGuideHint();
       this.refreshBoard();
       if (gameEngine.isComplete(this.gameState)) {
         this.handleSuccess();
@@ -246,19 +347,23 @@ Page({
     }
 
     wx.showModal({
-      title: '重置当前关卡',
-      content: '重置会回到初始打乱状态，并把倒计时恢复到本关初始值。',
+      title: '重置当前谜境',
+      content: '重置会回到初始打乱状态，并把倒计时恢复到本局初始值。',
       success: (res) => {
         if (!res.confirm) {
           return;
         }
 
         gameEngine.resetBoard(this.level, this.gameState);
+        logger.trackEvent('game_reset', {
+          levelId: this.level.levelId
+        });
         this.setData({
           timeLeft: this.level.timeLimit,
           timeText: formatTime(this.level.timeLimit),
           status: 'playing'
         });
+        this.clearGuideHint();
         this.refreshBoard();
       }
     });
@@ -275,7 +380,7 @@ Page({
     });
 
     wx.showActionSheet({
-      itemList: ['继续拼图', '重新开始', '返回首页'],
+      itemList: ['继续入局', '重新开始', '返回首页'],
       success: (res) => {
         if (res.tapIndex === 0) {
           this.setData({
@@ -294,6 +399,7 @@ Page({
             timeLeft: this.level.timeLimit,
             timeText: formatTime(this.level.timeLimit)
           });
+          this.clearGuideHint();
           this.refreshBoard();
           this.startTimer();
           return;
@@ -314,6 +420,10 @@ Page({
 
   handleFail() {
     this.stopTimer();
+    logger.trackEvent('game_fail', {
+      levelId: this.level.levelId,
+      moves: this.gameState.moves
+    });
     if (!this.gameState.revived) {
       this.setData({
         status: 'revive',
@@ -326,6 +436,9 @@ Page({
   },
 
   handleReviveClose() {
+    logger.trackEvent('game_revive_close', {
+      levelId: this.level.levelId
+    });
     this.setData({
       showRevive: false
     });
@@ -335,10 +448,17 @@ Page({
   handleReviveConfirm() {
     adService.showRewardedAction(`${this.data.reviveSeconds} 秒加时`).then((granted) => {
       if (!granted) {
+        logger.trackEvent('game_revive_cancel', {
+          levelId: this.level.levelId
+        });
         return;
       }
 
       this.gameState.revived = true;
+      logger.trackEvent('game_revive_success', {
+        levelId: this.level.levelId,
+        seconds: this.data.reviveSeconds
+      });
       const nextTime = this.data.timeLeft + this.data.reviveSeconds;
       this.setData({
         showRevive: false,
@@ -379,6 +499,13 @@ Page({
       successStars: result.rewards.stars,
       pendingResultUrl: `/pages/result/index?${query}`
     });
+    logger.trackEvent('game_success', {
+      levelId: this.level.levelId,
+      moves: this.gameState.moves,
+      timeLeft: this.data.timeLeft,
+      stars: result.rewards.stars
+    });
+    this.clearGuideHint();
     this.refreshProfileResources();
   },
 
@@ -387,6 +514,9 @@ Page({
       return;
     }
 
+    logger.trackEvent('game_open_result', {
+      levelId: this.level.levelId
+    });
     wx.redirectTo({
       url: this.data.pendingResultUrl
     });
@@ -410,6 +540,10 @@ Page({
       `nextLevelId=${result.nextLevelId || ''}`
     ].join('&');
 
+    logger.trackEvent('game_finish_redirect', {
+      levelId: this.level.levelId,
+      success: !!success
+    });
     wx.redirectTo({
       url: `/pages/result/index?${query}`
     });

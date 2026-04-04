@@ -16,12 +16,12 @@
 
   <view class="card">
     <view class="row-between intro-row">
-      <view class="card-title">本关目标</view>
+      <view class="card-title">入局简报</view>
       <view class="chip">{{level.rows}} x {{level.cols}}</view>
     </view>
     <view class="card-desc">
-      在 {{level.timeLimit}} 秒内拼回完整图片。
-      {{level.energyCost > 0 ? ('本关会消耗 ' + level.energyCost + ' 点体力') : '这是一关不消耗体力的自定义拼图'}}
+      在 {{level.timeLimit}} 秒内把整张谜境图片拼回完整。
+      {{level.energyCost > 0 ? ('进入本局会消耗 ' + level.energyCost + ' 点体力') : '这是一关不消耗体力的自定义谜境'}}
       ，并自带 {{level.hints}} 次基础提示。
     </view>
     <view class="stats-grid">
@@ -30,10 +30,10 @@
         <view class="stats-value">{{profile.energy}} / {{profile.maxEnergy}}</view>
       </view>
       <view class="stats-cell">
-        <view class="stats-label">通关奖励</view>
+        <view class="stats-label">揭晓奖励</view>
         <view class="stats-value">金币 +10 起</view>
       </view>
     </view>
-    <button class="primary-btn start-btn" bindtap="handleStart">开始拼图</button>
+    <button class="primary-btn start-btn" bindtap="handleStart">进入谜境</button>
   </view>
 </view>
