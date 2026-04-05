@@ -103,7 +103,7 @@ for (const scene of scenes) {
   fs.writeFileSync(filePath, svg, 'utf8');
   manifestEntries.push({
     levelId: scene.id,
-    path: `/assets/story/${fileName}`,
+    path: `assets/story/${fileName}`,
     sceneName: scene.name
   });
 }

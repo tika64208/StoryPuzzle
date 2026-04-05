@@ -26,7 +26,7 @@ const DISPLAY_LEVELS = {
   'ch04-lv07': '幽魂别离'
 };
 
-const DEFAULT_CUSTOM_IMAGE_PATH = '/assets/default-custom.jpg';
+const DEFAULT_CUSTOM_IMAGE_PATH = 'assets/default-custom.jpg';
 const DEFAULT_CUSTOM_TITLE = '海边谜境';
 const CUSTOM_SHARE_BASE64_LIMIT = 220 * 1024;
 const CUSTOM_LAYOUT_OPTIONS = [
@@ -269,7 +269,7 @@ function getMiniGameImageCandidates(src) {
     return [];
   }
 
-  const candidates = [source];
+  const candidates = [];
   const isSpecialPath =
     /^(https?:)?\/\//i.test(source) ||
     /^wxfile:\/\//i.test(source) ||
@@ -280,11 +280,17 @@ function getMiniGameImageCandidates(src) {
   if (!isSpecialPath) {
     const trimmed = source.replace(/^\/+/, '');
     if (trimmed !== source) {
-      candidates.push(`./${trimmed}`);
       candidates.push(trimmed);
+      candidates.push(`./${trimmed}`);
+      candidates.push(source);
     } else if (!/^\.\.?\//.test(source)) {
+      candidates.push(source);
       candidates.push(`./${source}`);
+    } else {
+      candidates.push(source);
     }
+  } else {
+    candidates.push(source);
   }
 
   return candidates.filter((candidate, index) => candidates.indexOf(candidate) === index);
@@ -696,7 +702,31 @@ class MiniGameApp {
     this.drag = null;
     this.triggerScreenMotion('levels');
     this.buildLevelLayout();
+    this.openChapterOverlay(chapter);
     this.syncScreenAudio();
+  }
+
+  openChapterOverlay(chapter) {
+    if (!chapter) {
+      this.overlay = null;
+      this.overlayButtons = [];
+      return;
+    }
+
+    this.overlay = {
+      type: 'chapter',
+      title: `${getSafeChapterTitle(chapter)} · 卷首旁白`,
+      desc: getChapterSummary(chapter),
+      chapterId: chapter.chapterId,
+      buttons: [
+        { key: 'start', label: '翻开这一卷' },
+        { key: 'back', label: '返回章节' }
+      ]
+    };
+    this.buildOverlayButtons();
+    logger.trackEvent('minigame_chapter_overlay_show', {
+      chapterId: chapter.chapterId
+    });
   }
 
   buildChapterLayout() {
@@ -1322,6 +1352,29 @@ class MiniGameApp {
     this.buildPuzzleLayout();
     this.syncScreenAudio();
     this.triggerScreenMotion('puzzle');
+    this.openIntroOverlay();
+  }
+
+  openIntroOverlay() {
+    if (!this.currentLevel || !this.currentLevel.introText) {
+      this.overlay = null;
+      this.overlayButtons = [];
+      return;
+    }
+
+    this.overlay = {
+      type: 'intro',
+      title: `${getSafeLevelTitle(this.currentLevel)} · 开场`,
+      desc: this.currentLevel.introText,
+      buttons: [
+        { key: 'start', label: '进入谜境' },
+        { key: 'home', label: '返回首页' }
+      ]
+    };
+    this.buildOverlayButtons();
+    logger.trackEvent('minigame_intro_show', {
+      levelId: this.currentLevel.levelId
+    });
   }
 
   buildPuzzleLayout() {
@@ -1555,6 +1608,7 @@ class MiniGameApp {
     if (this.drag) {
       const board = this.boardRect;
       const draggedPieceId = this.drag.pieceId;
+      const beforePieceSlots = this.capturePieceSlotSnapshot();
       const dragSnapshot = {
         dx: this.drag.dx,
         dy: this.drag.dy,
@@ -1574,6 +1628,7 @@ class MiniGameApp {
       if (moved) {
         this.guideHint = null;
         this.startSettleAnimation(dragSnapshot, rowDelta, colDelta);
+        this.startPassiveSettleAnimations(beforePieceSlots, dragSnapshot.groupPieceIds);
         this.triggerMoveFeedback(feedbackBeforeMove, draggedPieceId);
         logger.trackEvent('minigame_group_drag', {
           levelId: this.currentLevel.levelId,
@@ -1715,6 +1770,11 @@ class MiniGameApp {
   }
 
   handleLevelTap(x, y) {
+    if (this.overlay && this.overlay.type === 'chapter') {
+      this.handleOverlayTap(x, y);
+      return;
+    }
+
     const button = this.levelButtons.find((item) => hitButton(item, x, y));
     if (!button) {
       return;
@@ -2165,6 +2225,7 @@ class MiniGameApp {
     });
     this.refreshProfile();
     this.successResult = result;
+    const storyText = this.currentLevel && this.currentLevel.outroText;
     this.overlay = {
       type: 'success',
       title: '谜境已经拼合',
@@ -2174,6 +2235,23 @@ class MiniGameApp {
         { key: 'home', label: '主界面' }
       ]
     };
+    if (this.overlay && this.overlay.type === 'success') {
+      this.overlay.title = '谜境已经拼合';
+      this.overlay.desc = storyText
+        ? '完整画面已经回到眼前。你可以先停留欣赏，准备好了再揭晓这一回故事。'
+        : '完整画面已经回到眼前。你可以先停留欣赏，再决定是否进入下一回。';
+      this.overlay.storyTitle = `${getSafeLevelTitle(this.currentLevel)} · 这一回故事`;
+      this.overlay.storyPhase = storyText ? 'admire' : 'story';
+      this.overlay.buttons = storyText
+        ? [
+            { key: 'story', label: '揭晓这一回' },
+            { key: 'home', label: '留在主界面' }
+          ]
+        : [
+            { key: 'next', label: result.nextLevelId ? '进入下一回' : '返回首页' },
+            { key: 'home', label: '留在主界面' }
+          ];
+    }
     logger.trackEvent('minigame_level_success', {
       levelId: this.currentLevel.levelId,
       moves: this.gameState.moves,
@@ -2210,6 +2288,38 @@ class MiniGameApp {
       return;
     }
 
+    if (this.overlay.type === 'intro') {
+      if (button.key === 'start') {
+        logger.trackEvent('minigame_intro_confirm', {
+          levelId: this.currentLevel && this.currentLevel.levelId
+        });
+        this.overlay = null;
+        this.overlayButtons = [];
+        return;
+      }
+
+      if (button.key === 'home') {
+        this.switchToHome();
+      }
+      return;
+    }
+
+    if (this.overlay.type === 'chapter') {
+      if (button.key === 'start') {
+        logger.trackEvent('minigame_chapter_overlay_confirm', {
+          chapterId: this.selectedChapter && this.selectedChapter.chapterId
+        });
+        this.overlay = null;
+        this.overlayButtons = [];
+        return;
+      }
+
+      if (button.key === 'back') {
+        this.switchToChapters();
+      }
+      return;
+    }
+
     if (this.overlay.type === 'fail') {
       if (button.key === 'revive') {
         adService.showRewardedAction('15 秒加时').then((granted) => {
@@ -2243,6 +2353,11 @@ class MiniGameApp {
     }
 
     if (this.overlay.type === 'success') {
+      if (button.key === 'story') {
+        this.activateSuccessStoryOverlay();
+        return;
+      }
+
       if (button.key === 'next') {
         const nextLevelId = this.successResult && this.successResult.nextLevelId;
         if (nextLevelId) {
@@ -3156,6 +3271,7 @@ class MiniGameApp {
   }
 
   drawHome() {
+    return this.drawStoryHome();
     const ctx = this.ctx;
     const hero = this.homeMeta;
     const continueLevel = hero.continueLevel;
@@ -3287,6 +3403,7 @@ class MiniGameApp {
   }
 
   drawChapters() {
+    return this.drawStoryChapters();
     const ctx = this.ctx;
     const titleMotion = this.getScreenMotion('chapters');
     const titleY = 38 + titleMotion.offsetY * 0.28 + titleMotion.floatY * 0.7;
@@ -3426,6 +3543,7 @@ class MiniGameApp {
   }
 
   drawChapters() {
+    return this.drawStoryChapters();
     const ctx = this.ctx;
     const titleMotion = this.getScreenMotion('chapters');
     const titleY = 38 + titleMotion.offsetY * 0.28 + titleMotion.floatY * 0.7;
@@ -3537,6 +3655,7 @@ class MiniGameApp {
   }
 
   drawLevels() {
+    return this.drawStoryLevels();
     const ctx = this.ctx;
     const chapter = this.selectedChapter;
     if (!chapter) {
@@ -3713,6 +3832,430 @@ class MiniGameApp {
     });
   }
 
+  drawStoryHome() {
+    const ctx = this.ctx;
+    const hero = this.homeMeta;
+    const continueLevel = hero.continueLevel;
+    const continueImage = this.getResolvedImage(resolvePreviewImage(continueLevel));
+    const themeColor = (continueLevel && continueLevel.themeColor) || '#61d5e8';
+    const chapters = levelRepo.getChaptersWithProgress(this.progress);
+    const customCount = levelRepo.getCustomLevelsWithProgress(this.progress).length;
+    const totalLevels = chapters.reduce((sum, item) => sum + item.levels.length, 0);
+    const titleMotion = this.getScreenMotion('home');
+    const heroParallax = this.getHomeHeroParallax();
+    const titleAlpha = titleMotion.alpha;
+    const titleY = 36 + titleMotion.offsetY * 0.35 + titleMotion.floatY;
+    const accentWidth = 86 + titleMotion.glow * 26;
+
+    ctx.save();
+    ctx.shadowColor = `rgba(115, 240, 255, ${0.18 + titleMotion.glow * 0.12})`;
+    ctx.shadowBlur = 14 + titleMotion.glow * 14;
+    drawText(ctx, '谜境拼图', this.viewWidth / 2, titleY, 34, `rgba(234,252,255,${titleAlpha})`, 'center', 'bold');
+    ctx.restore();
+    drawText(
+      ctx,
+      '十六幕兰若旧梦，已尽数收入这一卷《倩女幽魂》',
+      this.viewWidth / 2,
+      78 + titleMotion.offsetY * 0.25,
+      14,
+      `rgba(230,251,255,${0.54 + titleAlpha * 0.28})`,
+      'center'
+    );
+    fillRoundRect(
+      ctx,
+      this.viewWidth / 2 - accentWidth / 2,
+      104 + titleMotion.offsetY * 0.18,
+      accentWidth,
+      4,
+      2,
+      `rgba(115, 240, 255, ${0.24 + titleMotion.glow * 0.18})`
+    );
+
+    drawGlassCard(ctx, hero.heroX, hero.heroY, hero.heroW, hero.heroH, 28);
+    ctx.save();
+    roundRectPath(ctx, hero.heroX + 8, hero.heroY + 8, hero.heroW - 16, hero.heroH - 16, 22);
+    ctx.clip();
+    ctx.fillStyle = 'rgba(6, 24, 36, 0.36)';
+    ctx.fillRect(hero.heroX + 8, hero.heroY + 8, hero.heroW - 16, hero.heroH - 16);
+    ctx.fillStyle = `rgba(111,245,255,${0.08 + titleMotion.glow * 0.05})`;
+    ctx.beginPath();
+    ctx.arc(hero.heroX + hero.heroW * 0.72 + heroParallax.orbX, hero.heroY + hero.heroH * 0.26 + heroParallax.orbY, 64, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,228,163,0.06)';
+    ctx.beginPath();
+    ctx.arc(hero.heroX + hero.heroW * 0.3 + heroParallax.orbX2, hero.heroY + hero.heroH * 0.72 + heroParallax.orbY2, 46, 0, Math.PI * 2);
+    ctx.fill();
+    if (continueImage) {
+      ctx.globalAlpha = 0.34 + titleAlpha * 0.66;
+      drawImageCover(
+        ctx,
+        continueImage,
+        hero.heroX + heroParallax.imageX,
+        hero.heroY + heroParallax.imageY,
+        hero.heroW,
+        hero.heroH,
+        24
+      );
+    }
+    this.drawMotionMotes('home', { x: hero.heroX + 8, y: hero.heroY + 8, w: hero.heroW - 16, h: hero.heroH - 16 }, {
+      count: 9,
+      tint: '143,246,255',
+      alphaScale: 0.9,
+      radius: 1.3,
+      seed: 2,
+      driftX: 3.4,
+      driftY: 5.2,
+      rise: 7
+    });
+    ctx.restore();
+    fillRoundRect(ctx, hero.heroX + 8, hero.heroY + 8, hero.heroW - 16, hero.heroH - 16, 22, 'rgba(2, 12, 20, 0.42)');
+
+    fillRoundRect(ctx, hero.heroX + 18, hero.heroY + 18, 76, 22, 11, `${themeColor}33`, `${themeColor}88`);
+    drawText(ctx, '当前剧卷', hero.heroX + 56, hero.heroY + 22, 11, '#e9ffff', 'center', 'bold');
+    drawText(
+      ctx,
+      continueLevel ? getSafeLevelTitle(continueLevel) : '等待开启《暴雨古道》',
+      hero.heroX + 18,
+      hero.heroY + 56,
+      24,
+      '#f3ffff',
+      'left',
+      'bold'
+    );
+    drawText(
+      ctx,
+      continueLevel ? getSafeChapterTitle(continueLevel) : '倩女幽魂 · 第一回',
+      hero.heroX + 18,
+      hero.heroY + 92,
+      14,
+      'rgba(230,251,255,0.74)'
+    );
+    drawText(
+      ctx,
+      `${this.profile.energy}/${this.profile.maxEnergy} 体力 · ${this.profile.coins} 金币 · ${customCount} 个自定义谜境`,
+      hero.heroX + 18,
+      hero.heroY + 118,
+      13,
+      'rgba(230,251,255,0.84)'
+    );
+    drawParagraph(
+      ctx,
+      continueLevel
+        ? '继续拼回当前剧情，沿着兰若寺的残梦一路走到《白首焚稿》。'
+        : '从《暴雨古道》入局，顺着十六幅图像一步步揭开《倩女幽魂》的完整旧梦。',
+      hero.heroX + 18,
+      hero.heroY + 144,
+      hero.heroW - 36,
+      13,
+      'rgba(230,251,255,0.76)',
+      20,
+      2
+    );
+
+    const chipY = hero.heroY + hero.heroH - 34;
+    const chipText = [`主卷 ${chapters.length} 卷`, `剧情 ${totalLevels} 回`];
+    chipText.forEach((text, index) => {
+      const x = hero.heroX + 18 + index * 110;
+      fillRoundRect(ctx, x, chipY, 94, 22, 11, 'rgba(8, 29, 44, 0.55)', 'rgba(145, 235, 255, 0.12)');
+      drawText(ctx, text, x + 47, chipY + 4, 11, '#dffcff', 'center');
+    });
+
+    this.homeButtons.forEach((button) => this.drawButton(button, button.primary));
+    this.homeMiniButtons.forEach((button) => this.drawButton(button, false, true));
+  }
+
+  drawStoryChapters() {
+    const ctx = this.ctx;
+    const titleMotion = this.getScreenMotion('chapters');
+    const titleY = 38 + titleMotion.offsetY * 0.28 + titleMotion.floatY * 0.7;
+    const titleAlpha = titleMotion.alpha;
+
+    ctx.save();
+    ctx.shadowColor = `rgba(115, 240, 255, ${0.16 + titleMotion.glow * 0.1})`;
+    ctx.shadowBlur = 12 + titleMotion.glow * 10;
+    drawText(ctx, '幽魂剧卷', this.viewWidth / 2, titleY, 32, `rgba(234,252,255,${titleAlpha})`, 'center', 'bold');
+    ctx.restore();
+    drawText(
+      ctx,
+      '这一卷只写兰若寺旧梦。自《暴雨古道》起，至《白首焚稿》终。',
+      this.viewWidth / 2,
+      78 + titleMotion.offsetY * 0.22,
+      14,
+      `rgba(230,251,255,${0.54 + titleAlpha * 0.26})`,
+      'center'
+    );
+    fillRoundRect(
+      ctx,
+      this.viewWidth / 2 - 52,
+      102 + titleMotion.offsetY * 0.18,
+      104 + titleMotion.glow * 18,
+      4,
+      2,
+      `rgba(115, 240, 255, ${0.22 + titleMotion.glow * 0.16})`
+    );
+
+    let cardIndex = 0;
+    this.chapterButtons.forEach((button) => {
+      if (button.key === 'back') {
+        this.drawButton(Object.assign({ label: '返回首页' }, button), false, true);
+        return;
+      }
+
+      const chapter = button.chapter;
+      const coverLevel = getChapterCoverLevel(chapter);
+      const coverSrc = resolvePreviewImage(coverLevel);
+      const coverImage = this.getResolvedImage(coverSrc);
+      const total = chapter.levels.length;
+      const completed = chapter.completedCount || 0;
+      const unlockedCount = chapter.levels.filter((item) => item.unlocked).length;
+      const progress = total ? completed / total : 0;
+      const progressWidth = Math.max(0, Math.floor((button.w - 140) * progress));
+      const themeColor = (coverLevel && coverLevel.themeColor) || '#73f0ff';
+      const reveal = this.getScreenMotion('chapters', cardIndex + 1);
+      cardIndex += 1;
+
+      drawGlassCard(ctx, button.x, button.y, button.w, button.h, 24);
+      fillRoundRect(ctx, button.x + 10, button.y + 10, 88, button.h - 20, 18, 'rgba(6, 24, 36, 0.78)', 'rgba(142, 235, 255, 0.14)');
+      if (coverImage) {
+        const coverShift = (1 - reveal.eased) * 7;
+        ctx.save();
+        roundRectPath(ctx, button.x + 10, button.y + 10, 88, button.h - 20, 18);
+        ctx.clip();
+        ctx.globalAlpha = reveal.alpha;
+        drawImageCover(
+          ctx,
+          coverImage,
+          button.x + 8 - coverShift * 0.2,
+          button.y + 10 + coverShift,
+          92,
+          button.h - 16,
+          18
+        );
+        this.drawMotionMotes('chapters', { x: button.x + 10, y: button.y + 10, w: 88, h: button.h - 20 }, {
+          count: 5,
+          tint: coverLevel && coverLevel.themeColor ? '143,246,255' : '111,245,255',
+          alphaScale: 0.9,
+          radius: 1.4,
+          seed: cardIndex,
+          driftX: 2.6,
+          driftY: 4.2,
+          rise: 6
+        });
+        ctx.restore();
+        fillRoundRect(ctx, button.x + 10, button.y + 10, 88, button.h - 20, 18, `rgba(3, 12, 22, ${0.34 - reveal.eased * 0.16})`);
+      }
+
+      fillRoundRect(ctx, button.x + 110, button.y + 14, 72, 22, 11, `${themeColor}33`, `${themeColor}88`);
+      drawText(ctx, `${completed}/${total} 已揭卷`, button.x + 146, button.y + 18, 11, '#e9ffff', 'center', 'bold');
+      drawText(ctx, getSafeChapterTitle(chapter), button.x + 110, button.y + 42, 20, '#f3ffff', 'left', 'bold');
+      drawText(
+        ctx,
+        unlockedCount > 0 ? `已入局 ${unlockedCount}/${total}` : '尚未入局',
+        button.x + button.w - 16,
+        button.y + 44,
+        12,
+        unlockedCount > 0 ? '#aef7ff' : 'rgba(230,251,255,0.48)',
+        'right'
+      );
+      drawParagraph(
+        ctx,
+        getChapterSummary(chapter),
+        button.x + 110,
+        button.y + 64,
+        button.w - 126,
+        12,
+        'rgba(230,251,255,0.7)',
+        17,
+        2
+      );
+      fillRoundRect(ctx, button.x + 110, button.y + button.h - 18, button.w - 126, 6, 3, 'rgba(255,255,255,0.08)');
+      if (progressWidth > 0) {
+        fillRoundRect(ctx, button.x + 110, button.y + button.h - 18, progressWidth, 6, 3, themeColor);
+      }
+    });
+  }
+
+  drawStoryLevels() {
+    const ctx = this.ctx;
+    const chapter = this.selectedChapter;
+    if (!chapter) {
+      this.drawStoryChapters();
+      return;
+    }
+
+    const coverLevel = getChapterCoverLevel(chapter);
+    const coverSrc = resolvePreviewImage(coverLevel);
+    const coverImage = this.getResolvedImage(coverSrc);
+    const themeColor = (coverLevel && coverLevel.themeColor) || '#73f0ff';
+    const total = chapter.levels.length;
+    const completed = chapter.levels.filter((item) => item.completed).length;
+    const titleMotion = this.getScreenMotion('levels');
+
+    ctx.save();
+    ctx.shadowColor = `rgba(115, 240, 255, ${0.16 + titleMotion.glow * 0.1})`;
+    ctx.shadowBlur = 12 + titleMotion.glow * 10;
+    drawText(
+      ctx,
+      getSafeChapterTitle(chapter),
+      this.viewWidth / 2,
+      34 + titleMotion.offsetY * 0.22 + titleMotion.floatY * 0.5,
+      30,
+      `rgba(234,252,255,${titleMotion.alpha})`,
+      'center',
+      'bold'
+    );
+    ctx.restore();
+    drawText(
+      ctx,
+      '按顺序进入十六回场景，逐步拼回兰若寺旧梦的全貌。',
+      this.viewWidth / 2,
+      70 + titleMotion.offsetY * 0.18,
+      14,
+      `rgba(230,251,255,${0.54 + titleMotion.alpha * 0.26})`,
+      'center'
+    );
+
+    const headerY = 102 + titleMotion.offsetY * 0.35;
+    ctx.save();
+    ctx.globalAlpha = titleMotion.alpha;
+    drawGlassCard(ctx, 18, headerY, this.viewWidth - 36, 74, 24);
+    if (coverImage) {
+      drawImageCover(ctx, coverImage, 26, headerY + 8, 94, 58, 16);
+      this.drawMotionMotes('levels', { x: 26, y: headerY + 8, w: 94, h: 58 }, {
+        count: 6,
+        tint: '111,245,255',
+        alphaScale: 0.88,
+        radius: 1.5,
+        seed: 1,
+        driftX: 2.8,
+        driftY: 4.6,
+        rise: 7
+      });
+      fillRoundRect(ctx, 26, headerY + 8, 94, 58, 16, 'rgba(3, 12, 22, 0.16)');
+    } else {
+      fillRoundRect(ctx, 26, headerY + 8, 94, 58, 16, 'rgba(6, 24, 36, 0.78)', 'rgba(142, 235, 255, 0.14)');
+    }
+
+    drawParagraph(ctx, getChapterSummary(chapter), 132, headerY + 12, this.viewWidth - 160, 13, 'rgba(230,251,255,0.78)', 18, 2);
+    fillRoundRect(ctx, 132, headerY + 42, 90, 20, 10, `${themeColor}33`, `${themeColor}88`);
+    drawText(ctx, `已完成 ${completed}/${total}`, 177, headerY + 46, 11, '#e9ffff', 'center', 'bold');
+    drawText(ctx, `${total} 回剧情`, this.viewWidth - 28, headerY + 46, 12, 'rgba(230,251,255,0.62)', 'right');
+    ctx.restore();
+
+    let rowIndex = 0;
+    this.levelButtons.forEach((button) => {
+      if (button.key === 'back') {
+        this.drawButton(Object.assign({ label: '返回剧卷' }, button), false, true);
+        return;
+      }
+
+      const level = button.level;
+      const locked = !level.unlocked;
+      const done = !!level.completed;
+      const previewSrc = resolvePreviewImage(level);
+      const previewImage = this.getResolvedImage(previewSrc);
+      const reveal = this.getScreenMotion('levels', rowIndex + 1);
+      const thumbPressed = !!(
+        this.uiPressState &&
+        this.uiPressState.screen === 'levels' &&
+        this.uiPressState.key === button.key
+      );
+      rowIndex += 1;
+      const rowY = button.y + reveal.offsetY * 0.72;
+      const thumbInset = thumbPressed ? 2 : 0;
+      const thumbX = button.x + 10 + thumbInset;
+      const thumbY = rowY + 8 + thumbInset;
+      const thumbW = 52 - thumbInset * 2;
+      const thumbH = button.h - 16 - thumbInset * 2;
+
+      ctx.save();
+      ctx.globalAlpha = reveal.alpha;
+      fillRoundRect(
+        ctx,
+        button.x,
+        rowY,
+        button.w,
+        button.h,
+        22,
+        locked ? 'rgba(7, 20, 31, 0.42)' : 'rgba(11, 30, 46, 0.62)',
+        locked ? 'rgba(255,255,255,0.06)' : 'rgba(145, 235, 255, 0.16)'
+      );
+
+      if (thumbPressed) {
+        ctx.save();
+        ctx.shadowBlur = 18;
+        ctx.shadowColor = 'rgba(111,245,255,0.26)';
+        fillRoundRect(ctx, thumbX - 1, thumbY - 1, thumbW + 2, thumbH + 2, 14, 'rgba(9, 30, 45, 0.68)', 'rgba(150,248,255,0.4)');
+        ctx.restore();
+      }
+      fillRoundRect(ctx, thumbX, thumbY, thumbW, thumbH, 14, 'rgba(6, 24, 36, 0.78)', thumbPressed ? 'rgba(163,249,255,0.42)' : 'rgba(142, 235, 255, 0.12)');
+      if (previewImage) {
+        drawImageCover(ctx, previewImage, thumbX, thumbY, thumbW, thumbH, 14);
+        this.drawMotionMotes('levels', { x: thumbX, y: thumbY, w: thumbW, h: thumbH }, {
+          count: 3,
+          tint: done ? '185,255,217' : '111,245,255',
+          alphaScale: locked ? 0.3 : 0.6,
+          radius: 1.1,
+          seed: rowIndex + 2,
+          driftX: 1.8,
+          driftY: 2.8,
+          rise: 5
+        });
+        fillRoundRect(
+          ctx,
+          thumbX,
+          thumbY,
+          thumbW,
+          thumbH,
+          14,
+          thumbPressed
+            ? 'rgba(150,248,255,0.1)'
+            : locked
+              ? 'rgba(2, 8, 14, 0.42)'
+              : 'rgba(3, 12, 22, 0.18)'
+        );
+      }
+
+      drawText(
+        ctx,
+        getSafeLevelTitle(level),
+        button.x + 74,
+        rowY + 10,
+        17,
+        locked ? 'rgba(230,251,255,0.42)' : '#f3ffff',
+        'left',
+        'bold'
+      );
+      drawText(
+        ctx,
+        `${level.rows}x${level.cols} · ${level.timeLimit}s · 体力 ${level.energyCost}`,
+        button.x + 74,
+        rowY + 31,
+        11,
+        locked ? 'rgba(230,251,255,0.3)' : 'rgba(230,251,255,0.62)'
+      );
+
+      let statusText = '点击入局';
+      let statusColor = '#aef7ff';
+      if (locked) {
+        statusText = '未解锁';
+        statusColor = 'rgba(230,251,255,0.42)';
+      } else if (done) {
+        statusText = `已完成 · ${level.stars || 0} 星`;
+        statusColor = '#b9ffd9';
+      }
+
+      drawText(ctx, statusText, button.x + button.w - 16, rowY + 12, 11, statusColor, 'right');
+      fillRoundRect(ctx, button.x + button.w - 88, rowY + button.h - 22, 72, 16, 8, `${themeColor}22`, `${themeColor}55`);
+      drawText(ctx, done ? '已拼合' : locked ? '待入局' : '可挑战', button.x + button.w - 52, rowY + button.h - 20, 10, '#eaffff', 'center');
+      ctx.restore();
+    });
+
+    if (this.overlay && this.overlay.type === 'chapter') {
+      this.drawOverlay();
+    }
+  }
+
   isButtonPressed(button) {
     if (!button || !this.uiPressState) {
       return false;
@@ -3879,11 +4422,16 @@ class MiniGameApp {
       const coords = gameEngine.slotToRowCol(piece.currentSlot, level.cols);
       const baseX = board.x + coords.col * cell;
       const baseY = board.y + coords.row * cell;
-      const settleOffset = !activeGroupLookup[piece.id] ? this.getSettleOffset(piece.id) : null;
+      const settleEffect = !activeGroupLookup[piece.id] ? this.getSettleEffect(piece.id) : null;
+      const settleOffset = settleEffect ? this.getSettleOffset(piece.id) : null;
       const dx = activeGroupLookup[piece.id] && this.drag ? this.drag.dx : settleOffset ? settleOffset.x : 0;
       const dy = activeGroupLookup[piece.id] && this.drag ? this.drag.dy : settleOffset ? settleOffset.y : 0;
       const drawX = baseX + dx;
       const drawY = baseY + dy;
+
+      if (settleEffect && settleEffect.variant === 'passiveSwap') {
+        this.drawSettleTrail(settleEffect, baseX, baseY, drawX, drawY, cell);
+      }
 
       if (this.currentImage) {
         const cropCoords = gameEngine.slotToRowCol(piece.correctSlot, level.cols);
@@ -4067,6 +4615,21 @@ class MiniGameApp {
       return;
     }
 
+    if (this.overlay.type === 'success') {
+      this.buildSuccessOverlayButtons();
+      return;
+    }
+
+    if (this.overlay.type === 'intro') {
+      this.buildIntroOverlayButtons();
+      return;
+    }
+
+    if (this.overlay.type === 'chapter') {
+      this.buildChapterOverlayButtons();
+      return;
+    }
+
     const cardX = 18;
     const cardW = this.viewWidth - 36;
     const cardH = this.overlay.type === 'success' ? 214 : 232;
@@ -4211,12 +4774,25 @@ class MiniGameApp {
 
   drawOverlay() {
     const ctx = this.ctx;
+    if (this.overlay && this.overlay.type === 'success') {
+      this.drawSuccessNarrativeOverlay();
+      return;
+    }
+    if (this.overlay && this.overlay.type === 'intro') {
+      this.drawIntroNarrativeOverlay();
+      return;
+    }
+    if (this.overlay && this.overlay.type === 'chapter') {
+      this.drawChapterNarrativeOverlay();
+      return;
+    }
     const isSuccess = this.overlay.type === 'success';
+    const isIntro = this.overlay.type === 'intro';
     const cardX = 18;
     const cardW = this.viewWidth - 36;
     const cardH = isSuccess ? 214 : 232;
     const cardY = this.viewHeight - cardH - 24;
-    const accent = isSuccess ? '#8ff6ff' : '#ffd38e';
+    const accent = isSuccess ? '#8ff6ff' : isIntro ? '#8ff6ff' : '#ffd38e';
     const title = isSuccess ? '谜境已经拼合' : '谜境暂未揭晓';
     const desc = isSuccess
       ? '完整画面已经浮现。你可以先停在这一刻欣赏原图，再决定是否继续进入下一段谜境。'
@@ -4256,6 +4832,240 @@ class MiniGameApp {
       fillRoundRect(ctx, x, chipY, chipW, 34, 14, 'rgba(7, 24, 36, 0.72)', 'rgba(124, 229, 245, 0.12)');
       drawText(ctx, chip.label, x + 12, chipY + 8, 10, 'rgba(230,251,255,0.58)', 'left');
       drawText(ctx, chip.value, x + 12, chipY + 20, 14, isSuccess ? '#b9fff7' : '#ffe0a8', 'left', 'bold');
+    });
+
+    this.buildOverlayButtons();
+    this.overlayButtons.forEach((button, index) => this.drawButton(button, index === 0));
+  }
+
+  activateSuccessStoryOverlay() {
+    if (!this.overlay || this.overlay.type !== 'success') {
+      return;
+    }
+
+    const storyText = (this.currentLevel && this.currentLevel.outroText) || '';
+    if (!storyText || this.overlay.storyPhase === 'story') {
+      return;
+    }
+
+    this.overlay.storyPhase = 'story';
+    this.overlay.title = '这一回故事';
+    this.overlay.desc = storyText;
+    this.overlay.buttons = [
+      { key: 'next', label: this.successResult && this.successResult.nextLevelId ? '进入下一回' : '返回首页' },
+      { key: 'home', label: '留在主界面' }
+    ];
+    this.buildOverlayButtons();
+    logger.trackEvent('minigame_story_revealed', {
+      levelId: this.currentLevel && this.currentLevel.levelId
+    });
+  }
+
+  getSuccessOverlayMetrics() {
+    const isStory = this.overlay && this.overlay.type === 'success' && this.overlay.storyPhase === 'story';
+    const cardX = 18;
+    const cardW = this.viewWidth - 36;
+    const cardH = isStory ? 252 : 214;
+    const cardY = this.viewHeight - cardH - 24;
+    const innerX = cardX + 14;
+    const innerW = cardW - 28;
+    const chipY = cardY + (isStory ? 148 : 112);
+
+    return {
+      isStory,
+      cardX,
+      cardY,
+      cardW,
+      cardH,
+      innerX,
+      innerW,
+      chipY,
+      chipW: Math.floor((cardW - 48) / 3)
+    };
+  }
+
+  buildSuccessOverlayButtons() {
+    const metrics = this.getSuccessOverlayMetrics();
+    const buttonGap = 12;
+    const count = this.overlay.buttons.length;
+    const buttonW = count === 1 ? metrics.innerW : Math.floor((metrics.innerW - buttonGap) / 2);
+    const y = metrics.cardY + metrics.cardH - 62;
+
+    this.overlayButtons = this.overlay.buttons.map((item, index) => ({
+      key: item.key,
+      label: item.label,
+      x: metrics.innerX + (count === 1 ? 0 : index * (buttonW + buttonGap)),
+      y,
+      w: buttonW,
+      h: 48
+    }));
+  }
+
+  buildIntroOverlayButtons() {
+    const cardX = 18;
+    const cardW = this.viewWidth - 36;
+    const cardH = 244;
+    const cardY = this.viewHeight - cardH - 24;
+    const innerX = cardX + 14;
+    const innerW = cardW - 28;
+    const buttonGap = 12;
+    const count = this.overlay.buttons.length;
+    const buttonW = count === 1 ? innerW : Math.floor((innerW - buttonGap) / 2);
+    const y = cardY + cardH - 62;
+
+    this.overlayButtons = this.overlay.buttons.map((item, index) => ({
+      key: item.key,
+      label: item.label,
+      x: innerX + (count === 1 ? 0 : index * (buttonW + buttonGap)),
+      y,
+      w: buttonW,
+      h: 48
+    }));
+  }
+
+  buildChapterOverlayButtons() {
+    const cardX = 18;
+    const cardW = this.viewWidth - 36;
+    const cardH = 252;
+    const cardY = this.viewHeight - cardH - 24;
+    const innerX = cardX + 14;
+    const innerW = cardW - 28;
+    const buttonGap = 12;
+    const count = this.overlay.buttons.length;
+    const buttonW = count === 1 ? innerW : Math.floor((innerW - buttonGap) / 2);
+    const y = cardY + cardH - 62;
+
+    this.overlayButtons = this.overlay.buttons.map((item, index) => ({
+      key: item.key,
+      label: item.label,
+      x: innerX + (count === 1 ? 0 : index * (buttonW + buttonGap)),
+      y,
+      w: buttonW,
+      h: 48
+    }));
+  }
+
+  drawSuccessNarrativeOverlay() {
+    const ctx = this.ctx;
+    const metrics = this.getSuccessOverlayMetrics();
+    const title = this.overlay.title || '谜境已经拼合';
+    const desc = this.overlay.desc || '完整画面已经回到眼前。';
+    const chips = metrics.isStory
+      ? [
+          { label: '故事场景', value: (this.currentLevel && this.currentLevel.sceneName) || getSafeLevelTitle(this.currentLevel) },
+          { label: '线索标签', value: (this.currentLevel && this.currentLevel.clueTag) || '剧情' },
+          { label: '剩余时间', value: formatTime(this.timeLeft) }
+        ]
+      : [
+          { label: '金币奖励', value: `+${(this.successResult && this.successResult.rewards.coins) || 0}` },
+          { label: '谜境评级', value: `${(this.successResult && this.successResult.rewards.stars) || 0} 星` },
+          { label: '剩余时间', value: formatTime(this.timeLeft) }
+        ];
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(1, 9, 16, 0.42)';
+    ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
+    ctx.restore();
+
+    drawGlassCard(ctx, metrics.cardX, metrics.cardY, metrics.cardW, metrics.cardH, 28);
+    fillRoundRect(ctx, metrics.cardX + 16, metrics.cardY + 16, 108, 22, 11, 'rgba(143, 246, 255, 0.22)', 'rgba(143, 246, 255, 0.55)');
+    drawText(ctx, metrics.isStory ? '剧情揭晓' : '拼合完成', metrics.cardX + 70, metrics.cardY + 20, 11, '#eaffff', 'center', 'bold');
+    drawText(ctx, title, metrics.cardX + 16, metrics.cardY + 48, 24, '#f3fdff', 'left', 'bold');
+    drawParagraph(ctx, desc, metrics.cardX + 16, metrics.cardY + 80, metrics.cardW - 32, 14, 'rgba(230,251,255,0.82)', 20, metrics.isStory ? 3 : 2);
+
+    chips.forEach((chip, index) => {
+      const x = metrics.cardX + 12 + index * (metrics.chipW + 6);
+      fillRoundRect(ctx, x, metrics.chipY, metrics.chipW, 34, 14, 'rgba(7, 24, 36, 0.72)', 'rgba(124, 229, 245, 0.12)');
+      drawText(ctx, chip.label, x + 12, metrics.chipY + 8, 10, 'rgba(230,251,255,0.58)', 'left');
+      drawText(ctx, chip.value, x + 12, metrics.chipY + 20, 14, metrics.isStory ? '#f7e6b0' : '#b9fff7', 'left', 'bold');
+    });
+
+    this.buildOverlayButtons();
+    this.overlayButtons.forEach((button, index) => this.drawButton(button, index === 0));
+  }
+
+  drawIntroNarrativeOverlay() {
+    const ctx = this.ctx;
+    const cardX = 18;
+    const cardW = this.viewWidth - 36;
+    const cardH = 244;
+    const cardY = this.viewHeight - cardH - 24;
+    const chipW = Math.floor((cardW - 48) / 3);
+    const chipY = cardY + 146;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(1, 9, 16, 0.42)';
+    ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
+    ctx.restore();
+
+    drawGlassCard(ctx, cardX, cardY, cardW, cardH, 28);
+    fillRoundRect(ctx, cardX + 16, cardY + 16, 108, 22, 11, 'rgba(143, 246, 255, 0.22)', 'rgba(143, 246, 255, 0.55)');
+    drawText(ctx, '剧情开场', cardX + 70, cardY + 20, 11, '#eaffff', 'center', 'bold');
+    drawText(ctx, this.overlay.title || '这一回开场', cardX + 16, cardY + 48, 24, '#f3fdff', 'left', 'bold');
+    drawParagraph(ctx, this.overlay.desc || '', cardX + 16, cardY + 80, cardW - 32, 14, 'rgba(230,251,255,0.82)', 20, 3);
+
+    const chips = [
+      { label: '当前回目', value: getSafeLevelTitle(this.currentLevel) },
+      { label: '线索标签', value: this.currentLevel.clueTag || '剧情' },
+      { label: '倒计时', value: formatTime(this.timeLeft) }
+    ];
+
+    chips.forEach((chip, index) => {
+      const x = cardX + 12 + index * (chipW + 6);
+      fillRoundRect(ctx, x, chipY, chipW, 34, 14, 'rgba(7, 24, 36, 0.72)', 'rgba(124, 229, 245, 0.12)');
+      drawText(ctx, chip.label, x + 12, chipY + 8, 10, 'rgba(230,251,255,0.58)', 'left');
+      drawText(ctx, chip.value, x + 12, chipY + 20, 14, '#b9fff7', 'left', 'bold');
+    });
+
+    this.buildOverlayButtons();
+    this.overlayButtons.forEach((button, index) => this.drawButton(button, index === 0));
+  }
+
+  drawChapterNarrativeOverlay() {
+    const ctx = this.ctx;
+    const chapter = this.selectedChapter;
+    const total = chapter ? chapter.levels.length : 0;
+    const completed = chapter ? chapter.levels.filter((item) => item.completed).length : 0;
+    const unlocked = chapter ? chapter.levels.filter((item) => item.unlocked).length : 0;
+    const coverLevel = getChapterCoverLevel(chapter);
+    const coverImage = this.getResolvedImage(resolvePreviewImage(coverLevel));
+    const cardX = 18;
+    const cardW = this.viewWidth - 36;
+    const cardH = 252;
+    const cardY = this.viewHeight - cardH - 24;
+    const chipW = Math.floor((cardW - 48) / 3);
+    const chipY = cardY + 156;
+
+    ctx.save();
+    ctx.fillStyle = 'rgba(1, 9, 16, 0.46)';
+    ctx.fillRect(0, 0, this.viewWidth, this.viewHeight);
+    ctx.restore();
+
+    drawGlassCard(ctx, cardX, cardY, cardW, cardH, 28);
+    fillRoundRect(ctx, cardX + 16, cardY + 16, 108, 22, 11, 'rgba(143, 246, 255, 0.22)', 'rgba(143, 246, 255, 0.55)');
+    drawText(ctx, '章节旁白', cardX + 70, cardY + 20, 11, '#eaffff', 'center', 'bold');
+
+    if (coverImage) {
+      drawImageCover(ctx, coverImage, cardX + 16, cardY + 48, 96, 84, 18);
+      fillRoundRect(ctx, cardX + 16, cardY + 48, 96, 84, 18, 'rgba(3, 12, 22, 0.16)');
+    } else {
+      fillRoundRect(ctx, cardX + 16, cardY + 48, 96, 84, 18, 'rgba(6, 24, 36, 0.78)', 'rgba(142, 235, 255, 0.14)');
+    }
+
+    drawText(ctx, this.overlay.title || (chapter ? getSafeChapterTitle(chapter) : '章节旁白'), cardX + 126, cardY + 52, 22, '#f3fdff', 'left', 'bold');
+    drawParagraph(ctx, this.overlay.desc || '', cardX + 126, cardY + 84, cardW - 142, 14, 'rgba(230,251,255,0.82)', 20, 3);
+
+    const chips = [
+      { label: '总回目', value: `${total} 回` },
+      { label: '已揭卷', value: `${completed}/${total}` },
+      { label: '已入局', value: `${unlocked}/${total}` }
+    ];
+
+    chips.forEach((chip, index) => {
+      const x = cardX + 12 + index * (chipW + 6);
+      fillRoundRect(ctx, x, chipY, chipW, 34, 14, 'rgba(7, 24, 36, 0.72)', 'rgba(124, 229, 245, 0.12)');
+      drawText(ctx, chip.label, x + 12, chipY + 8, 10, 'rgba(230,251,255,0.58)', 'left');
+      drawText(ctx, chip.value, x + 12, chipY + 20, 14, '#b9fff7', 'left', 'bold');
     });
 
     this.buildOverlayButtons();
@@ -4618,14 +5428,76 @@ class MiniGameApp {
         pieceId,
         fromX: offsetX,
         fromY: offsetY,
+        variant: 'active',
         age: 0,
         duration
       });
     });
   }
 
+  capturePieceSlotSnapshot() {
+    const snapshot = {};
+    if (!this.gameState || !this.gameState.pieces) {
+      return snapshot;
+    }
+
+    Object.keys(this.gameState.pieces).forEach((pieceId) => {
+      const piece = this.gameState.pieces[pieceId];
+      snapshot[piece.id] = piece.currentSlot;
+    });
+    return snapshot;
+  }
+
+  startPassiveSettleAnimations(beforePieceSlots, excludePieceIds) {
+    if (!beforePieceSlots || !this.boardRect || !this.currentLevel || !this.gameState || !this.gameState.pieces) {
+      return;
+    }
+
+    const excludedLookup = {};
+    (excludePieceIds || []).forEach((pieceId) => {
+      excludedLookup[pieceId] = true;
+    });
+
+    const cell = this.boardRect.cell;
+    const duration = 150;
+    Object.keys(this.gameState.pieces).forEach((pieceKey) => {
+      const piece = this.gameState.pieces[pieceKey];
+      if (!piece || excludedLookup[piece.id]) {
+        return;
+      }
+
+      const previousSlot = beforePieceSlots[piece.id];
+      if (!previousSlot || previousSlot === piece.currentSlot) {
+        return;
+      }
+
+      const previousCoords = gameEngine.slotToRowCol(previousSlot, this.currentLevel.cols);
+      const currentCoords = gameEngine.slotToRowCol(piece.currentSlot, this.currentLevel.cols);
+      const fromX = (previousCoords.col - currentCoords.col) * cell;
+      const fromY = (previousCoords.row - currentCoords.row) * cell;
+
+      if (Math.abs(fromX) < 0.5 && Math.abs(fromY) < 0.5) {
+        return;
+      }
+
+      this.settleAnimations = this.settleAnimations.filter((item) => item.pieceId !== piece.id);
+      this.settleAnimations.push({
+        pieceId: piece.id,
+        fromX,
+        fromY,
+        variant: 'passiveSwap',
+        age: 0,
+        duration
+      });
+    });
+  }
+
+  getSettleEffect(pieceId) {
+    return this.settleAnimations.find((item) => item.pieceId === pieceId) || null;
+  }
+
   getSettleOffset(pieceId) {
-    const effect = this.settleAnimations.find((item) => item.pieceId === pieceId);
+    const effect = this.getSettleEffect(pieceId);
     if (!effect) {
       return null;
     }
@@ -4636,6 +5508,58 @@ class MiniGameApp {
       x: effect.fromX * (1 - eased),
       y: effect.fromY * (1 - eased)
     };
+  }
+
+  drawSettleTrail(effect, baseX, baseY, drawX, drawY, cell) {
+    const deltaX = drawX - baseX;
+    const deltaY = drawY - baseY;
+    if (Math.abs(deltaX) < 1 && Math.abs(deltaY) < 1) {
+      return;
+    }
+
+    const progress = clamp(effect.age / effect.duration, 0, 1);
+    const alpha = (1 - progress) * 0.28;
+    const ctx = this.ctx;
+
+    ctx.save();
+    ctx.shadowBlur = 16 + (1 - progress) * 10;
+    ctx.shadowColor = `rgba(111, 245, 255, ${alpha * 0.95})`;
+
+    if (Math.abs(deltaX) >= Math.abs(deltaY)) {
+      const left = Math.min(baseX, drawX) + 8;
+      const width = cell - 16 + Math.abs(deltaX);
+      const y = baseY + 12;
+      const height = cell - 24;
+      const gradient = ctx.createLinearGradient(left, 0, left + width, 0);
+      if (deltaX > 0) {
+        gradient.addColorStop(0, `rgba(111, 245, 255, ${alpha * 0.12})`);
+        gradient.addColorStop(0.68, `rgba(111, 245, 255, ${alpha * 0.28})`);
+        gradient.addColorStop(1, 'rgba(111, 245, 255, 0)');
+      } else {
+        gradient.addColorStop(0, 'rgba(111, 245, 255, 0)');
+        gradient.addColorStop(0.32, `rgba(111, 245, 255, ${alpha * 0.28})`);
+        gradient.addColorStop(1, `rgba(111, 245, 255, ${alpha * 0.12})`);
+      }
+      fillRoundRect(ctx, left, y, width, height, 16, gradient);
+    } else {
+      const top = Math.min(baseY, drawY) + 8;
+      const height = cell - 16 + Math.abs(deltaY);
+      const x = baseX + 12;
+      const width = cell - 24;
+      const gradient = ctx.createLinearGradient(0, top, 0, top + height);
+      if (deltaY > 0) {
+        gradient.addColorStop(0, `rgba(111, 245, 255, ${alpha * 0.12})`);
+        gradient.addColorStop(0.68, `rgba(111, 245, 255, ${alpha * 0.28})`);
+        gradient.addColorStop(1, 'rgba(111, 245, 255, 0)');
+      } else {
+        gradient.addColorStop(0, 'rgba(111, 245, 255, 0)');
+        gradient.addColorStop(0.32, `rgba(111, 245, 255, ${alpha * 0.28})`);
+        gradient.addColorStop(1, `rgba(111, 245, 255, ${alpha * 0.12})`);
+      }
+      fillRoundRect(ctx, x, top, width, height, 16, gradient);
+    }
+
+    ctx.restore();
   }
 
   capturePuzzleFeedback(pieceId) {

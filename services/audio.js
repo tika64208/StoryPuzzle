@@ -2,15 +2,15 @@ const runtime = require('../config/runtime');
 const logger = require('./logger');
 
 const EFFECT_SOURCES = {
-  snap: '/assets/audio/snap.wav',
-  guide: '/assets/audio/guide.wav',
-  lock: '/assets/audio/lock.wav',
-  success: '/assets/audio/success.wav',
-  fail: '/assets/audio/fail.wav'
+  snap: 'assets/audio/snap.wav',
+  guide: 'assets/audio/guide.wav',
+  lock: 'assets/audio/lock.wav',
+  success: 'assets/audio/success.wav',
+  fail: 'assets/audio/fail.wav'
 };
 
 const AMBIENT_SOURCES = {
-  menu: '/assets/audio/menu-ambient.wav'
+  menu: 'assets/audio/menu-ambient.wav'
 };
 
 const audioContexts = {};

@@ -607,6 +607,49 @@ function applyVerticalStep(level, state, groupId, direction) {
   return true;
 }
 
+function trySwapSinglePieces(level, state, pieceId, rowDelta, colDelta) {
+  const piece = state.pieces[pieceId];
+  if (!piece) {
+    return false;
+  }
+
+  const targetSlot = translateSlot(piece.currentSlot, rowDelta, colDelta, level);
+  if (!targetSlot || targetSlot === piece.currentSlot) {
+    return false;
+  }
+
+  const targetPieceId = state.slots[targetSlot];
+  if (!targetPieceId || targetPieceId === pieceId) {
+    return false;
+  }
+
+  const targetPiece = state.pieces[targetPieceId];
+  if (!targetPiece || targetPiece.locked) {
+    return false;
+  }
+
+  const sourceGroup = state.groups[piece.groupId];
+  const targetGroup = state.groups[targetPiece.groupId];
+  const isSingleToSingle =
+    sourceGroup &&
+    targetGroup &&
+    sourceGroup.pieceIds.length === 1 &&
+    targetGroup.pieceIds.length === 1;
+
+  if (!isSingleToSingle) {
+    return false;
+  }
+
+  const sourceSlot = piece.currentSlot;
+  state.slots[sourceSlot] = targetPieceId;
+  state.slots[targetSlot] = pieceId;
+  state.pieces[pieceId].currentSlot = targetSlot;
+  state.pieces[targetPieceId].currentSlot = sourceSlot;
+  recomputeGroups(level, state);
+  state.moves += 1;
+  return true;
+}
+
 function moveGroup(level, state, pieceId, rowDelta, colDelta) {
   if (!pieceId || (!rowDelta && !colDelta)) {
     return false;
@@ -623,6 +666,14 @@ function moveGroup(level, state, pieceId, rowDelta, colDelta) {
   const group = workingState.groups[workingPiece.groupId];
   if (!group || group.locked || workingPiece.locked) {
     return false;
+  }
+
+  if (trySwapSinglePieces(level, workingState, pieceId, rowDelta, colDelta)) {
+    state.slots = workingState.slots;
+    state.pieces = workingState.pieces;
+    state.groups = workingState.groups;
+    state.moves = workingState.moves;
+    return true;
   }
 
   const rowStep = rowDelta === 0 ? 0 : rowDelta > 0 ? 1 : -1;

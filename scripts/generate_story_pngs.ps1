@@ -537,7 +537,7 @@ foreach ($scene in $scenes) {
   }
 
   $manifestMap[$scene.Id] = @{
-    path = "/assets/story/$($scene.Id).png"
+    path = "assets/story/$($scene.Id).png"
     sceneName = $scene.Name
   }
 }
