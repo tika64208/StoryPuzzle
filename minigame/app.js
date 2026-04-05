@@ -379,7 +379,9 @@ class MiniGameApp {
     this.homeButtons = [];
     this.homeMiniButtons = [];
     this.chapterButtons = [];
+    this.chapterShareButtons = [];
     this.levelButtons = [];
+    this.levelShareButton = null;
     this.customButtons = [];
     this.customItemButtons = [];
     this.supplyButtons = [];
@@ -418,6 +420,11 @@ class MiniGameApp {
     };
     this.customPreviewImage = null;
     this.uiSyncAt = 0;
+    this.shareState = {
+      lastIncomingKey: '',
+      lastHandledAt: 0
+    };
+    this.successShareButton = null;
     this.legalState = {
       type: 'privacy',
       title: '隐私政策',
@@ -460,6 +467,257 @@ class MiniGameApp {
     });
   }
 
+  getLaunchOptions() {
+    try {
+      if (!wx.getLaunchOptionsSync) {
+        return {};
+      }
+      return wx.getLaunchOptionsSync() || {};
+    } catch (error) {
+      logger.captureError('minigame_get_launch_options', error);
+      return {};
+    }
+  }
+
+  setupSharing() {
+    try {
+      if (wx.showShareMenu) {
+        try {
+          wx.showShareMenu({
+            withShareTicket: false,
+            menus: ['shareAppMessage']
+          });
+        } catch (error) {
+          wx.showShareMenu({
+            withShareTicket: false
+          });
+        }
+      }
+    } catch (error) {
+      logger.captureError('minigame_show_share_menu', error);
+    }
+
+    try {
+      if (wx.onShareAppMessage) {
+        wx.onShareAppMessage(() => this.getSharePayload());
+      }
+    } catch (error) {
+      logger.captureError('minigame_register_share_handler', error);
+    }
+
+    try {
+      if (wx.onShow) {
+        wx.onShow((options) => {
+          this.handleIncomingShareOptions(options, 'show');
+        });
+      }
+    } catch (error) {
+      logger.captureError('minigame_register_show_handler', error);
+    }
+  }
+
+  buildShareQuery(params) {
+    return Object.keys(params || {})
+      .filter((key) => params[key] !== undefined && params[key] !== null && params[key] !== '')
+      .map((key) => `${encodeURIComponent(key)}=${encodeURIComponent(String(params[key]))}`)
+      .join('&');
+  }
+
+  getHomeSharePayload() {
+    const firstLevel = levelRepo.getLevelById(levelRepo.getFirstLevelId());
+    return {
+      shareType: 'home',
+      title: '来《谜境拼图》一起拼回《倩女幽魂》的十六回旧梦',
+      imageUrl: (firstLevel && resolvePreviewImage(firstLevel)) || '',
+      query: this.buildShareQuery({
+        shareType: 'home'
+      })
+    };
+  }
+
+  getChapterSharePayload(chapterId) {
+    const chapters = levelRepo.getChaptersWithProgress(this.progress);
+    const chapter = chapters.find((item) => item.chapterId === chapterId);
+    if (!chapter) {
+      return this.getHomeSharePayload();
+    }
+
+    const coverLevel = getChapterCoverLevel(chapter);
+    return {
+      shareType: 'chapter',
+      title: `来《谜境拼图》翻开「${getSafeChapterTitle(chapter)}」这一卷`,
+      imageUrl: (coverLevel && resolvePreviewImage(coverLevel)) || '',
+      query: this.buildShareQuery({
+        shareType: 'chapter',
+        chapterId: chapter.chapterId
+      })
+    };
+  }
+
+  getLevelSharePayload(levelId) {
+    const level = levelRepo.getLevelById(levelId);
+    if (!level || level.isCustom) {
+      return this.getHomeSharePayload();
+    }
+
+    return {
+      shareType: 'level',
+      title: `来帮我拼「${getSafeLevelTitle(level)}」这张谜境图`,
+      imageUrl: resolvePreviewImage(level),
+      query: this.buildShareQuery({
+        shareType: 'level',
+        levelId: level.levelId
+      })
+    };
+  }
+
+  getSharePayload() {
+    let payload = null;
+    if (this.currentLevel && !this.currentLevel.isCustom) {
+      payload = this.getLevelSharePayload(this.currentLevel.levelId);
+    } else if (this.screen === 'levels' && this.selectedChapter) {
+      payload = this.getChapterSharePayload(this.selectedChapter.chapterId);
+    } else {
+      payload = this.getHomeSharePayload();
+    }
+
+    const sharePayload = {
+      title: payload.title,
+      query: payload.query
+    };
+    if (payload.imageUrl) {
+      sharePayload.imageUrl = payload.imageUrl;
+    }
+    return sharePayload;
+  }
+
+  triggerShare(shareType, payloadId) {
+    if (!wx.shareAppMessage) {
+      this.showToast('当前基础库暂不支持主动转发');
+      return;
+    }
+
+    const payload =
+      shareType === 'level'
+        ? this.getLevelSharePayload(payloadId || (this.currentLevel && this.currentLevel.levelId))
+        : shareType === 'chapter'
+          ? this.getChapterSharePayload(payloadId || (this.selectedChapter && this.selectedChapter.chapterId))
+          : this.getHomeSharePayload();
+
+    try {
+      wx.shareAppMessage(this.getSharePayloadFromData(payload));
+      logger.trackEvent('minigame_active_share', {
+        shareType: payload.shareType,
+        targetId: payloadId || ''
+      });
+      this.showToast('转发面板已打开');
+    } catch (error) {
+      logger.captureError('minigame_active_share', error, {
+        shareType,
+        payloadId: payloadId || ''
+      });
+      this.showToast('打开转发失败');
+    }
+  }
+
+  getSharePayloadFromData(payload) {
+    const sharePayload = {
+      title: payload.title,
+      query: payload.query
+    };
+    if (payload.imageUrl) {
+      sharePayload.imageUrl = payload.imageUrl;
+    }
+    return sharePayload;
+  }
+
+  getSuccessShareAction() {
+    if (!this.currentLevel) {
+      return null;
+    }
+
+    if (this.currentLevel.isCustom) {
+      const level = customLevels.getCustomLevelById(this.currentLevel.levelId);
+      if (level && level.customMeta && level.customMeta.shareImageBase64) {
+        return {
+          key: 'share-code',
+          label: '谜境码'
+        };
+      }
+      return null;
+    }
+
+    return {
+      key: 'share-level',
+      label: '转发'
+    };
+  }
+
+  handleSuccessShareAction() {
+    const action = this.getSuccessShareAction();
+    if (!action) {
+      this.showToast('当前这一关暂时不能转发');
+      return;
+    }
+
+    if (action.key === 'share-code') {
+      this.handleCustomCopyCode(this.currentLevel.levelId);
+      return;
+    }
+
+    this.triggerShare('level', this.currentLevel.levelId);
+  }
+
+  async handleIncomingShareOptions(options, source) {
+    const query = (options && options.query) || {};
+    const shareType = String(query.shareType || '').trim();
+    const levelId = String(query.levelId || '').trim();
+    const chapterId = String(query.chapterId || '').trim();
+    const shareKey = [shareType, levelId, chapterId].join('|');
+
+    if (!shareType) {
+      return;
+    }
+
+    if (this.shareState.lastIncomingKey === shareKey) {
+      return;
+    }
+
+    this.shareState.lastIncomingKey = shareKey;
+    this.shareState.lastHandledAt = Date.now();
+
+    if (shareType === 'level' && levelId) {
+      const level = levelRepo.getLevelById(levelId);
+      if (!level || level.isCustom) {
+        this.showToast('朋友分享的关卡暂时不可用');
+        return;
+      }
+      logger.trackEvent('minigame_share_open_level', {
+        levelId,
+        source
+      });
+      await this.openLevel(levelId, false);
+      this.showToast('已进入朋友分享的关卡');
+      return;
+    }
+
+    if (shareType === 'chapter' && chapterId) {
+      logger.trackEvent('minigame_share_open_chapter', {
+        chapterId,
+        source
+      });
+      this.switchToLevels(chapterId);
+      this.showToast('已翻开朋友分享的剧卷');
+      return;
+    }
+
+    logger.trackEvent('minigame_share_open_home', {
+      source
+    });
+    this.switchToHome();
+    this.showToast('欢迎来到朋友分享的谜境');
+  }
+
   start() {
     if (wx.setPreferredFPS) {
       try {
@@ -474,6 +732,8 @@ class MiniGameApp {
     this.progress = storage.getProgress();
     audioService.preload();
     this.switchToHome();
+    this.setupSharing();
+    this.handleIncomingShareOptions(this.getLaunchOptions(), 'launch');
     logger.trackEvent('minigame_boot', {
       appId: getAccountInfo().appId || ''
     });
@@ -672,8 +932,8 @@ class MiniGameApp {
       { key: 'custom', label: '自定义谜境', x: cardX + miniW + miniGap, y: miniTop, w: miniW, h: miniH },
       { key: 'supply', label: '谜境补给站', x: cardX, y: miniTop + miniH + miniGap, w: miniW, h: miniH },
       { key: 'signin', label: '每日签到', x: cardX + miniW + miniGap, y: miniTop + miniH + miniGap, w: miniW, h: miniH },
-      { key: 'privacy', label: '隐私摘要', x: cardX, y: miniTop + (miniH + miniGap) * 2, w: miniW, h: miniH },
-      { key: 'agreement', label: '用户协议', x: cardX + miniW + miniGap, y: miniTop + (miniH + miniGap) * 2, w: miniW, h: miniH }
+      { key: 'share', label: '转发好友', x: cardX, y: miniTop + (miniH + miniGap) * 2, w: miniW, h: miniH },
+      { key: 'privacy', label: '隐私摘要', x: cardX + miniW + miniGap, y: miniTop + (miniH + miniGap) * 2, w: miniW, h: miniH }
     ];
   }
 
@@ -736,6 +996,7 @@ class MiniGameApp {
     const cardH = 94;
     const gap = 10;
 
+    this.chapterShareButtons = [];
     this.chapterButtons = chapters.map((chapter, index) => ({
       key: chapter.chapterId,
       chapter,
@@ -744,6 +1005,20 @@ class MiniGameApp {
       w: width,
       h: cardH
     }));
+
+    this.chapterButtons.forEach((button) => {
+      if (!button.chapter) {
+        return;
+      }
+      this.chapterShareButtons.push({
+        key: `share:${button.chapter.chapterId}`,
+        chapterId: button.chapter.chapterId,
+        x: button.x + button.w - 78,
+        y: button.y + button.h - 30,
+        w: 58,
+        h: 20
+      });
+    });
 
     this.chapterButtons.push({
       key: 'back',
@@ -757,6 +1032,7 @@ class MiniGameApp {
   buildLevelLayout() {
     if (!this.selectedChapter) {
       this.levelButtons = [];
+      this.levelShareButton = null;
       return;
     }
 
@@ -781,6 +1057,7 @@ class MiniGameApp {
       w: width,
       h: 48
     });
+    this.levelShareButton = null;
   }
 
   refreshCustomData() {
@@ -1030,8 +1307,13 @@ class MiniGameApp {
 
   async handleMoreTools() {
     try {
-      const result = await actionSheetPromise(['发布检查', '复制运行日志']);
+      const result = await actionSheetPromise(['转发给朋友', '发布检查', '复制运行日志']);
       if (result.tapIndex === 0) {
+        this.triggerShare('home');
+        return;
+      }
+
+      if (result.tapIndex === 1) {
         logger.trackEvent('minigame_open_release_check');
         const checklist = release.getReleaseChecklist();
         const pendingText = checklist.pendingItems
@@ -1684,6 +1966,11 @@ class MiniGameApp {
       return;
     }
 
+    if (button.key === 'share') {
+      this.triggerShare('home');
+      return;
+    }
+
     if (button.key === 'signin') {
       const result = storage.claimDailySignIn();
       this.refreshProfile();
@@ -1752,6 +2039,15 @@ class MiniGameApp {
   }
 
   handleChapterTap(x, y) {
+    const shareButton = this.chapterShareButtons.find((item) => hitButton(item, x, y));
+    if (shareButton) {
+      logger.trackEvent('minigame_share_chapter_from_list', {
+        chapterId: shareButton.chapterId
+      });
+      this.triggerShare('chapter', shareButton.chapterId);
+      return;
+    }
+
     const button = this.chapterButtons.find((item) => hitButton(item, x, y));
     if (!button) {
       return;
@@ -1772,6 +2068,17 @@ class MiniGameApp {
   handleLevelTap(x, y) {
     if (this.overlay && this.overlay.type === 'chapter') {
       this.handleOverlayTap(x, y);
+      return;
+    }
+
+    if (hitButton(this.levelShareButton, x, y)) {
+      const chapterId = this.selectedChapter && this.selectedChapter.chapterId;
+      if (chapterId) {
+        logger.trackEvent('minigame_share_chapter_from_levels', {
+          chapterId
+        });
+        this.triggerShare('chapter', chapterId);
+      }
       return;
     }
 
@@ -2283,6 +2590,11 @@ class MiniGameApp {
   }
 
   handleOverlayTap(x, y) {
+    if (this.overlay && this.overlay.type === 'success' && hitButton(this.successShareButton, x, y)) {
+      this.handleSuccessShareAction();
+      return;
+    }
+
     const button = this.overlayButtons.find((item) => hitButton(item, x, y));
     if (!button) {
       return;
@@ -3089,6 +3401,12 @@ class MiniGameApp {
       fillRoundRect(ctx, button.x + 110, button.y + button.h - 18, button.w - 126, 6, 3, 'rgba(255,255,255,0.08)');
       if (progressWidth > 0) {
         fillRoundRect(ctx, button.x + 110, button.y + button.h - 18, progressWidth, 6, 3, themeColor);
+      }
+
+      const shareButton = this.chapterShareButtons.find((item) => item.chapterId === chapter.chapterId);
+      if (shareButton) {
+        fillRoundRect(ctx, shareButton.x, shareButton.y, shareButton.w, shareButton.h, 10, 'rgba(76, 200, 219, 0.18)', 'rgba(143, 246, 255, 0.42)');
+        drawText(ctx, '转发', shareButton.x + shareButton.w / 2, shareButton.y + 4, 10, '#eaffff', 'center', 'bold');
       }
     });
   }
@@ -4140,6 +4458,15 @@ class MiniGameApp {
     fillRoundRect(ctx, 132, headerY + 42, 90, 20, 10, `${themeColor}33`, `${themeColor}88`);
     drawText(ctx, `已完成 ${completed}/${total}`, 177, headerY + 46, 11, '#e9ffff', 'center', 'bold');
     drawText(ctx, `${total} 回剧情`, this.viewWidth - 28, headerY + 46, 12, 'rgba(230,251,255,0.62)', 'right');
+    this.levelShareButton = {
+      key: 'share-chapter',
+      x: this.viewWidth - 84,
+      y: headerY + 12,
+      w: 48,
+      h: 20
+    };
+    fillRoundRect(ctx, this.levelShareButton.x, this.levelShareButton.y, this.levelShareButton.w, this.levelShareButton.h, 10, 'rgba(76, 200, 219, 0.18)', 'rgba(143, 246, 255, 0.42)');
+    drawText(ctx, '转发', this.levelShareButton.x + this.levelShareButton.w / 2, this.levelShareButton.y + 4, 10, '#eaffff', 'center', 'bold');
     ctx.restore();
 
     let rowIndex = 0;
@@ -4522,8 +4849,8 @@ class MiniGameApp {
     }
 
     const safeWidth = this.viewWidth - 28;
-    const boardTop = 126;
-    const bottomSpace = 214;
+    const boardTop = 114;
+    const bottomSpace = 160;
     const maxBoardW = safeWidth - 24;
     const maxBoardH = this.viewHeight - boardTop - bottomSpace;
     const cellSize = Math.floor(
@@ -4542,18 +4869,18 @@ class MiniGameApp {
       cell: cellSize
     };
 
-    const buttonGap = 10;
+    const buttonGap = 8;
     const buttonW = Math.floor((this.viewWidth - 44 - buttonGap * 2) / 3);
     const secondRowW = Math.floor((this.viewWidth - 44 - buttonGap) / 2);
-    const firstRowY = boardY + boardH + 18;
-    const secondRowY = firstRowY + 54 + buttonGap;
+    const firstRowY = boardY + boardH + 14;
+    const secondRowY = firstRowY + 46 + buttonGap;
 
     this.puzzleButtons = [
-      { key: 'hint', label: `破局提示 ${this.gameState.hintsLeft}`, x: 22, y: firstRowY, w: buttonW, h: 54 },
-      { key: 'lock', label: `定格符 ${this.profile.unlockDragTools}`, x: 22 + buttonW + buttonGap, y: firstRowY, w: buttonW, h: 54 },
-      { key: 'guide', label: `引路符 ${this.profile.guideHintTools}`, x: 22 + (buttonW + buttonGap) * 2, y: firstRowY, w: buttonW, h: 54 },
-      { key: 'reset', label: '重置谜境', x: 22, y: secondRowY, w: secondRowW, h: 50 },
-      { key: 'home', label: '离开谜境', x: 22 + secondRowW + buttonGap, y: secondRowY, w: secondRowW, h: 50 }
+      { key: 'hint', label: `提示 ${this.gameState.hintsLeft}`, x: 22, y: firstRowY, w: buttonW, h: 46 },
+      { key: 'lock', label: `定格 ${this.profile.unlockDragTools}`, x: 22 + buttonW + buttonGap, y: firstRowY, w: buttonW, h: 46 },
+      { key: 'guide', label: `引路 ${this.profile.guideHintTools}`, x: 22 + (buttonW + buttonGap) * 2, y: firstRowY, w: buttonW, h: 46 },
+      { key: 'reset', label: '重置', x: 22, y: secondRowY, w: secondRowW, h: 42 },
+      { key: 'home', label: '返回', x: 22 + secondRowW + buttonGap, y: secondRowY, w: secondRowW, h: 42 }
     ];
   }
 
@@ -4700,76 +5027,70 @@ class MiniGameApp {
     const guideText = this.guideHint
       ? (() => {
           const target = gameEngine.slotToRowCol(this.guideHint.targetSlot, level.cols);
-          return `引路符已标出目标位置：第 ${target.row + 1} 行，第 ${target.col + 1} 列`;
+          return `目标 ${target.row + 1} 行 ${target.col + 1} 列`;
         })()
       : '拖动相邻碎片拼成更大的拼块组，再慢慢把整张谜境拼回原貌。';
 
-    drawGlassCard(ctx, 14, 18, this.viewWidth - 28, 96, 26);
-    fillRoundRect(ctx, 26, 28, 72, 72, 18, 'rgba(8, 28, 40, 0.84)', 'rgba(124, 229, 245, 0.14)');
+    drawGlassCard(ctx, 14, 18, this.viewWidth - 28, 82, 24);
+    fillRoundRect(ctx, 24, 26, 56, 56, 14, 'rgba(8, 28, 40, 0.84)', 'rgba(124, 229, 245, 0.14)');
     if (this.currentImage) {
-      drawImageCover(ctx, this.currentImage, 26, 28, 72, 72, 18);
-      fillRoundRect(ctx, 26, 28, 72, 72, 18, 'rgba(3, 12, 22, 0.12)');
+      drawImageCover(ctx, this.currentImage, 24, 26, 56, 56, 14);
+      fillRoundRect(ctx, 24, 26, 56, 56, 14, 'rgba(3, 12, 22, 0.12)');
     }
 
-    drawText(ctx, getSafeLevelTitle(level), 112, 30, 24, '#f3fdff', 'left', 'bold');
+    drawText(ctx, getSafeLevelTitle(level), 94, 28, 22, '#f3fdff', 'left', 'bold');
     drawText(
       ctx,
-      `${getSafeChapterTitle(level)} · ${level.rows}x${level.cols} · ${level.timeLimit} 秒谜境`,
-      112,
-      60,
-      13,
+      `${getSafeChapterTitle(level)} · ${level.rows}x${level.cols}`,
+      94,
+      54,
+      12,
       'rgba(230,251,255,0.68)'
     );
     drawText(
       ctx,
-      `已归位 ${correctCount}/${totalCount} · 已定格 ${lockedCount} · 步数 ${this.gameState.moves}`,
-      112,
-      82,
-      13,
+      `归位 ${correctCount}/${totalCount} · 步数 ${this.gameState.moves} · 定格 ${lockedCount}`,
+      94,
+      74,
+      12,
       'rgba(230,251,255,0.78)'
     );
 
-    fillRoundRect(ctx, this.viewWidth - 116, 28, 78, 44, 20, 'rgba(68, 219, 238, 0.18)', 'rgba(123, 247, 255, 0.36)');
-    drawText(ctx, '剩余时间', this.viewWidth - 77, 36, 10, 'rgba(230,251,255,0.68)', 'center');
-    drawText(ctx, formatTime(this.timeLeft), this.viewWidth - 77, 50, 20, '#aef7ff', 'center', 'bold');
-
-    fillRoundRect(ctx, this.viewWidth - 116, 80, 78, 20, 10, 'rgba(255,255,255,0.06)', 'rgba(123, 247, 255, 0.14)');
-    drawText(ctx, `提示 ${this.gameState.hintsLeft}`, this.viewWidth - 77, 84, 11, '#e9ffff', 'center');
+    fillRoundRect(ctx, this.viewWidth - 108, 24, 70, 52, 18, 'rgba(68, 219, 238, 0.16)', 'rgba(123, 247, 255, 0.32)');
+    drawText(ctx, '倒计时', this.viewWidth - 73, 32, 10, 'rgba(230,251,255,0.64)', 'center');
+    drawText(ctx, formatTime(this.timeLeft), this.viewWidth - 73, 48, 19, '#aef7ff', 'center', 'bold');
 
     drawGlassCard(ctx, this.boardRect.x - 12, this.boardRect.y - 12, this.boardRect.w + 24, this.boardRect.h + 24, 30);
     this.drawBoard();
 
-    drawText(ctx, '破局工具', 24, this.puzzleButtons[0].y - 22, 16, '#eafcff', 'left', 'bold');
-    drawText(ctx, '定格正确碎片，或用引路符标出下一块能接边的碎片。', this.viewWidth - 24, this.puzzleButtons[0].y - 20, 12, 'rgba(230,251,255,0.6)', 'right');
-    this.puzzleButtons.forEach((button) => this.drawButton(button, button.key === 'hint'));
-
-    const infoY = this.puzzleButtons[3].y + this.puzzleButtons[3].h + 12;
-    const infoH = 58;
-    const leftW = 128;
-    drawGlassCard(ctx, 18, infoY, leftW, infoH, 18);
-    drawText(ctx, '谜境资源', 30, infoY + 12, 12, 'rgba(230,251,255,0.7)', 'left');
-    drawText(ctx, `定格符 ${this.profile.unlockDragTools}`, 30, infoY + 30, 14, '#eafcff', 'left', 'bold');
-    drawText(ctx, `引路符 ${this.profile.guideHintTools}`, 30, infoY + 48, 14, '#f7e6b0', 'left', 'bold');
-
-    drawGlassCard(ctx, 154, infoY, this.viewWidth - 172, infoH, 18);
-    drawText(ctx, this.overlay && this.overlay.type === 'success' ? '谜境已完整展开' : '入局提示', 168, infoY + 12, 12, 'rgba(230,251,255,0.7)', 'left');
-    drawParagraph(
-      ctx,
-      this.overlay && this.overlay.type === 'success'
-        ? '完整画面已经回到眼前。你可以先欣赏原图，再决定要不要继续下一关。'
-        : guideText,
-      168,
-      infoY + 28,
-      this.viewWidth - 200,
-      13,
-      this.guideHint ? '#f6e4a7' : 'rgba(230,251,255,0.82)',
-      18,
-      2
-    );
-
     if (this.overlay) {
       this.drawOverlay();
+      return;
     }
+
+    this.puzzleButtons.forEach((button) => this.drawButton(button, button.key === 'hint', true));
+
+    const statusY = this.puzzleButtons[3].y + this.puzzleButtons[3].h + 10;
+    drawGlassCard(ctx, 18, statusY, this.viewWidth - 36, 34, 16);
+    drawText(
+      ctx,
+      `定格 ${this.profile.unlockDragTools} · 引路 ${this.profile.guideHintTools}`,
+      30,
+      statusY + 11,
+      11,
+      'rgba(230,251,255,0.72)',
+      'left'
+    );
+    drawText(
+      ctx,
+      this.guideHint ? guideText : '优先接长边',
+      this.viewWidth - 30,
+      statusY + 11,
+      11,
+      this.guideHint ? '#f6e4a7' : 'rgba(230,251,255,0.78)',
+      'right'
+    );
+
   }
 
   drawOverlay() {
@@ -4778,6 +5099,7 @@ class MiniGameApp {
       this.drawSuccessNarrativeOverlay();
       return;
     }
+    this.successShareButton = null;
     if (this.overlay && this.overlay.type === 'intro') {
       this.drawIntroNarrativeOverlay();
       return;
@@ -4950,6 +5272,7 @@ class MiniGameApp {
     const metrics = this.getSuccessOverlayMetrics();
     const title = this.overlay.title || '谜境已经拼合';
     const desc = this.overlay.desc || '完整画面已经回到眼前。';
+    const shareAction = this.getSuccessShareAction();
     const chips = metrics.isStory
       ? [
           { label: '故事场景', value: (this.currentLevel && this.currentLevel.sceneName) || getSafeLevelTitle(this.currentLevel) },
@@ -4970,6 +5293,21 @@ class MiniGameApp {
     drawGlassCard(ctx, metrics.cardX, metrics.cardY, metrics.cardW, metrics.cardH, 28);
     fillRoundRect(ctx, metrics.cardX + 16, metrics.cardY + 16, 108, 22, 11, 'rgba(143, 246, 255, 0.22)', 'rgba(143, 246, 255, 0.55)');
     drawText(ctx, metrics.isStory ? '剧情揭晓' : '拼合完成', metrics.cardX + 70, metrics.cardY + 20, 11, '#eaffff', 'center', 'bold');
+    this.successShareButton = null;
+    if (shareAction) {
+      const shareW = shareAction.label === '谜境码' ? 68 : 60;
+      const shareX = metrics.cardX + metrics.cardW - shareW - 16;
+      const shareY = metrics.cardY + 16;
+      fillRoundRect(ctx, shareX, shareY, shareW, 22, 11, 'rgba(76, 200, 219, 0.18)', 'rgba(143, 246, 255, 0.45)');
+      drawText(ctx, shareAction.label, shareX + shareW / 2, shareY + 4, 11, '#eaffff', 'center', 'bold');
+      this.successShareButton = {
+        key: shareAction.key,
+        x: shareX,
+        y: shareY,
+        w: shareW,
+        h: 22
+      };
+    }
     drawText(ctx, title, metrics.cardX + 16, metrics.cardY + 48, 24, '#f3fdff', 'left', 'bold');
     drawParagraph(ctx, desc, metrics.cardX + 16, metrics.cardY + 80, metrics.cardW - 32, 14, 'rgba(230,251,255,0.82)', 20, metrics.isStory ? 3 : 2);
 
