@@ -29,6 +29,7 @@ const DISPLAY_LEVELS = {
 const DEFAULT_CUSTOM_IMAGE_PATH = 'assets/default-custom.jpg';
 const DEFAULT_CUSTOM_TITLE = '海边谜境';
 const CUSTOM_SHARE_BASE64_LIMIT = 220 * 1024;
+const MAX_IMAGE_CACHE_ITEMS = 8;
 const CUSTOM_LAYOUT_OPTIONS = [
   { label: '3 x 3 轻松', rows: 3, cols: 3, timeLimit: 90, hints: 3 },
   { label: '4 x 4 标准', rows: 4, cols: 4, timeLimit: 140, hints: 2 },
@@ -797,6 +798,149 @@ class MiniGameApp {
     this.progress = storage.getProgress();
   }
 
+  isRectVisible(y, height, margin) {
+    const safeMargin = typeof margin === 'number' ? margin : 80;
+    return y + height >= -safeMargin && y <= this.viewHeight + safeMargin;
+  }
+
+  getImageCacheEntry(src) {
+    const candidates = getMiniGameImageCandidates(src);
+    return candidates.map((candidate) => this.images[candidate]).find(Boolean) || null;
+  }
+
+  bindImageCacheEntry(candidates, entry) {
+    entry.__cacheKeys = Array.isArray(entry.__cacheKeys) ? entry.__cacheKeys : [];
+    candidates.forEach((candidate) => {
+      if (entry.__cacheKeys.indexOf(candidate) === -1) {
+        entry.__cacheKeys.push(candidate);
+      }
+      this.images[candidate] = entry;
+    });
+  }
+
+  touchImageCacheEntry(entry) {
+    if (!entry) {
+      return;
+    }
+    entry.__lastUsedAt = Date.now();
+  }
+
+  dropImageCacheEntry(entry) {
+    if (!entry) {
+      return;
+    }
+    const keys = Array.isArray(entry.__cacheKeys) ? entry.__cacheKeys.slice() : [];
+    keys.forEach((key) => {
+      if (this.images[key] === entry) {
+        delete this.images[key];
+      }
+    });
+    if (entry.__resolvedImage) {
+      try {
+        entry.__resolvedImage.onload = null;
+        entry.__resolvedImage.onerror = null;
+        entry.__resolvedImage.src = '';
+      } catch (error) {
+        logger.captureError('minigame_release_image', error, {
+          src: entry.__resolvedSrc || ''
+        });
+      }
+    }
+    entry.__cacheKeys = [];
+    entry.__resolvedImage = null;
+  }
+
+  collectPreferredImageSources() {
+    const preferred = [];
+    const pushSource = (src) => {
+      if (!src) {
+        return;
+      }
+      const candidates = getMiniGameImageCandidates(src);
+      candidates.forEach((candidate) => {
+        if (preferred.indexOf(candidate) === -1) {
+          preferred.push(candidate);
+        }
+      });
+    };
+
+    if (this.screen === 'home') {
+      const continueLevel = this.homeMeta && this.homeMeta.continueLevel;
+      pushSource(resolvePreviewImage(continueLevel));
+    } else if (this.screen === 'chapters') {
+      this.chapterButtons.forEach((button) => {
+        if (!button.chapter || !this.isRectVisible(button.y, button.h, 120)) {
+          return;
+        }
+        pushSource(resolvePreviewImage(getChapterCoverLevel(button.chapter)));
+      });
+    } else if (this.screen === 'levels') {
+      pushSource(resolvePreviewImage(getChapterCoverLevel(this.selectedChapter)));
+      this.levelButtons.forEach((button) => {
+        if (!button.level || !this.isRectVisible(button.y, button.h, 120)) {
+          return;
+        }
+        pushSource(resolvePreviewImage(button.level));
+      });
+    } else if (this.screen === 'custom') {
+      pushSource(this.customDraft && this.customDraft.imagePath);
+      this.customLevels.slice(0, 3).forEach((level) => {
+        pushSource(resolvePreviewImage(level));
+      });
+    } else if (this.screen === 'puzzle') {
+      pushSource(resolvePreviewImage(this.currentLevel));
+    }
+
+    pushSource(this.customDraft && this.customDraft.isDefault ? DEFAULT_CUSTOM_IMAGE_PATH : '');
+    return preferred;
+  }
+
+  pruneImageCache(force) {
+    const preferred = this.collectPreferredImageSources();
+    const preferredSet = {};
+    preferred.forEach((key) => {
+      preferredSet[key] = true;
+    });
+
+    const uniqueEntries = [];
+    Object.keys(this.images).forEach((key) => {
+      const entry = this.images[key];
+      if (!entry || uniqueEntries.indexOf(entry) > -1) {
+        return;
+      }
+      uniqueEntries.push(entry);
+    });
+
+    const resolvedEntries = uniqueEntries.filter((entry) => entry.__resolvedImage);
+    const preferredEntries = resolvedEntries.filter((entry) =>
+      (entry.__cacheKeys || []).some((key) => preferredSet[key])
+    );
+    const capacity = Math.max(MAX_IMAGE_CACHE_ITEMS, preferredEntries.length + 1);
+
+    const removable = resolvedEntries
+      .filter((entry) => !(entry.__cacheKeys || []).some((key) => preferredSet[key]))
+      .sort((left, right) => (left.__lastUsedAt || 0) - (right.__lastUsedAt || 0));
+
+    while (force && removable.length) {
+      this.dropImageCacheEntry(removable.shift());
+    }
+
+    const activeEntries = [];
+    Object.keys(this.images).forEach((key) => {
+      const entry = this.images[key];
+      if (!entry || !entry.__resolvedImage || activeEntries.indexOf(entry) > -1) {
+        return;
+      }
+      activeEntries.push(entry);
+    });
+
+    let overflow = activeEntries.length - capacity;
+    while (overflow > 0 && removable.length) {
+      this.dropImageCacheEntry(removable.shift());
+      overflow -= 1;
+    }
+  }
+
   switchToHome() {
     this.refreshProfile();
     this.screen = 'home';
@@ -813,6 +957,7 @@ class MiniGameApp {
     this.selectedChapter = null;
     this.buildHomeLayout();
     this.refreshHomeQuickActions();
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -945,6 +1090,7 @@ class MiniGameApp {
     this.selectedChapter = null;
     this.triggerScreenMotion('chapters');
     this.buildChapterLayout();
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -963,6 +1109,7 @@ class MiniGameApp {
     this.triggerScreenMotion('levels');
     this.buildLevelLayout();
     this.openChapterOverlay(chapter);
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -1100,6 +1247,7 @@ class MiniGameApp {
     }
     this.ensureCustomPreview(this.customDraft.imagePath);
     this.buildCustomLayout();
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -1164,6 +1312,7 @@ class MiniGameApp {
     this.drag = null;
     this.triggerScreenMotion('supply');
     this.buildSupplyLayout();
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -1199,6 +1348,7 @@ class MiniGameApp {
     this.drag = null;
     this.triggerScreenMotion('legal');
     this.buildLegalLayout(type || 'privacy', 0);
+    this.pruneImageCache(true);
     this.syncScreenAudio();
   }
 
@@ -1584,6 +1734,7 @@ class MiniGameApp {
 
     const removed = customLevels.removeCustomLevel(levelId);
     if (removed && removed.customMeta && removed.customMeta.imagePath) {
+      this.dropImageCacheEntry(this.getImageCacheEntry(removed.customMeta.imagePath));
       imageUtil.removeFileSafe(removed.customMeta.imagePath);
     }
     this.refreshProfile();
@@ -1705,12 +1856,14 @@ class MiniGameApp {
       return Promise.resolve(null);
     }
 
-    if (this.images[src]) {
-      return this.images[src];
+    const cachedEntry = this.getImageCacheEntry(src);
+    if (cachedEntry) {
+      this.touchImageCacheEntry(cachedEntry);
+      return cachedEntry;
     }
 
     const candidates = getMiniGameImageCandidates(src);
-    let cachedPromise = null;
+    let cacheEntry = null;
     const promise = new Promise((resolve) => {
       const tryLoad = (index) => {
         if (index >= candidates.length) {
@@ -1725,13 +1878,13 @@ class MiniGameApp {
         const candidate = candidates[index];
         const image = this.canvas.createImage ? this.canvas.createImage() : wx.createImage();
         image.onload = () => {
-          if (cachedPromise) {
-            cachedPromise.__resolvedImage = image;
-            cachedPromise.__resolvedSrc = candidate;
+          if (cacheEntry) {
+            cacheEntry.__resolvedImage = image;
+            cacheEntry.__resolvedSrc = candidate;
+            this.touchImageCacheEntry(cacheEntry);
           }
-          candidates.forEach((key) => {
-            this.images[key] = cachedPromise;
-          });
+          this.bindImageCacheEntry(candidates, cacheEntry);
+          this.pruneImageCache(false);
           resolve(image);
         };
         image.onerror = () => {
@@ -1742,23 +1895,25 @@ class MiniGameApp {
 
       tryLoad(0);
     });
-    cachedPromise = promise;
-    candidates.forEach((key) => {
-      this.images[key] = promise;
-    });
-    return promise;
+    cacheEntry = promise;
+    cacheEntry.__resolvedImage = null;
+    cacheEntry.__resolvedSrc = '';
+    cacheEntry.__cacheKeys = [];
+    cacheEntry.__lastUsedAt = Date.now();
+    this.bindImageCacheEntry(candidates, cacheEntry);
+    return cacheEntry;
   }
 
   getResolvedImage(src) {
     if (!src) {
       return null;
     }
-    const candidates = getMiniGameImageCandidates(src);
-    const cached = candidates.map((candidate) => this.images[candidate]).find(Boolean);
+    const cached = this.getImageCacheEntry(src);
     if (!cached) {
       this.loadImage(src);
       return null;
     }
+    this.touchImageCacheEntry(cached);
     return cached.__resolvedImage || null;
   }
 
@@ -2925,6 +3080,10 @@ class MiniGameApp {
     this.chapterButtons.forEach((button) => {
       if (button.key === 'back') {
         this.drawButton(Object.assign({ label: '返回首页' }, button), false, true);
+        return;
+      }
+
+      if (!this.isRectVisible(button.y, button.h, 96)) {
         return;
       }
 
@@ -4473,6 +4632,10 @@ class MiniGameApp {
     this.levelButtons.forEach((button) => {
       if (button.key === 'back') {
         this.drawButton(Object.assign({ label: '返回剧卷' }, button), false, true);
+        return;
+      }
+
+      if (!this.isRectVisible(button.y, button.h, 96)) {
         return;
       }
 
