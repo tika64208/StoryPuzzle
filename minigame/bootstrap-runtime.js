@@ -16,7 +16,7 @@ function initializeApp(app, helpers) {
   app.ctx = canvas.getContext('2d');
   app.images = {};
   app.screen = 'loading';
-  app.loadingText = '姝ｅ湪鍒濆鍖栧皬娓告垙...';
+  app.loadingText = '正在整理谜境线索...';
   app.toast = null;
   app.homeButtons = [];
   app.homeMiniButtons = [];
@@ -92,7 +92,7 @@ function initializeApp(app, helpers) {
   };
   app.legalState = {
     type: 'privacy',
-    title: '闅愮鏀跨瓥',
+    title: '隐私说明',
     pages: [],
     pageIndex: 0
   };

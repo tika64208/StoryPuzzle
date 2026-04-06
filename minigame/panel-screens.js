@@ -69,7 +69,7 @@ function drawSettingsPanel(app, helpers) {
   drawGlassCard(ctx, 18, 106, app.viewWidth - 36, 104, 28);
   drawText(ctx, '基础设置总览', 34, 126, 18, '#eafcff', 'left', 'bold');
   drawText(ctx, `当前已开启 ${enabledCount} / 2 项`, app.viewWidth - 34, 128, 14, '#aef7ff', 'right');
-  drawText(ctx, '声音与震动会立刻生效，适合直接用于设置系统截图。', 34, 154, 13, '#b8fff7');
+  drawText(ctx, '声音与震动会立即生效，适合直接用于设置系统截图。', 34, 154, 13, '#b8fff7');
 
   const statusCards = [
     {
@@ -97,11 +97,19 @@ function drawSettingsPanel(app, helpers) {
     fillRoundRect(ctx, item.x + 14, item.y + 14, 10, 10, 5, item.accent);
     drawText(ctx, item.label, item.x + 34, item.y + 14, 12, 'rgba(230,251,255,0.56)');
     drawText(ctx, item.value, item.x + 34, item.y + 32, 20, '#f3ffff', 'left', 'bold');
-    drawText(ctx, item.label === '音效状态' ? '点击下方按钮切换声音反馈' : '点击下方按钮切换震动反馈', item.x + item.w - 16, item.y + 22, 11, 'rgba(230,251,255,0.56)', 'right');
+    drawText(
+      ctx,
+      item.label === '音效状态' ? '点击下方按钮切换声音反馈' : '点击下方按钮切换震动反馈',
+      item.x + item.w - 16,
+      item.y + 22,
+      11,
+      'rgba(230,251,255,0.56)',
+      'right'
+    );
   });
 
   drawText(ctx, '快捷操作', 24, firstActionY - 20, 12, '#aef7ff', 'left', 'bold');
-  drawText(ctx, `${app.profile.energy} / ${app.profile.maxEnergy} 体力 · 设置立刻生效`, app.viewWidth - 24, firstActionY - 20, 11, 'rgba(174,247,255,0.72)', 'right');
+  drawText(ctx, `${app.profile.energy} / ${app.profile.maxEnergy} 体力 · 设置立即生效`, app.viewWidth - 24, firstActionY - 20, 11, 'rgba(174,247,255,0.72)', 'right');
 
   app.settingsButtons.forEach((button) => {
     const primary = button.key === 'sound' || button.key === 'vibration';
@@ -200,7 +208,7 @@ function drawLeaderboardPanel(app, helpers) {
 
   drawLeaderboardAvatar({ nickname: identity.nickname || '我', avatarUrl: identity.avatarUrl || '' }, 34, 156, 52, '#aef7ff');
   drawText(ctx, identity.nickname || '我', 100, 160, 18, '#f3ffff', 'left', 'bold');
-  drawText(ctx, hasRealIdentity ? '你的当前微信资料' : '当前使用本地占位身份', 100, 184, 12, 'rgba(230,251,255,0.62)');
+  drawText(ctx, hasRealIdentity ? '你的当前微信资料' : '当前使用本地上传身份', 100, 184, 12, 'rgba(230,251,255,0.62)');
   drawText(ctx, `${totalScore} 分`, app.viewWidth - 34, 166, 28, '#aef7ff', 'right', 'bold');
   drawText(ctx, hintText, 34, 220, 12, hasRealIdentity ? '#b8fff7' : '#ffd79a');
 
