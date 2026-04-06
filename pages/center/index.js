@@ -1,3 +1,5 @@
+// Legacy page-based implementation kept for reference and filing support only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const runtime = require('../../config/runtime');
 const adService = require('../../services/ad');
 const logger = require('../../services/logger');
@@ -122,14 +124,6 @@ Page({
     });
   },
 
-  handleToggleSound(event) {
-    storage.saveSoundEnabled(event.detail.value);
-    logger.trackEvent('center_toggle_sound', {
-      enabled: !!event.detail.value
-    });
-    this.refresh();
-  },
-
   handleCustom() {
     logger.trackEvent('center_open_custom');
     wx.navigateTo({
@@ -137,57 +131,17 @@ Page({
     });
   },
 
-  handleOpenPrivacy() {
-    logger.trackEvent('center_open_privacy');
+  handleOpenSettings() {
+    logger.trackEvent('center_open_settings');
     wx.navigateTo({
-      url: '/pages/legal/index?type=privacy'
+      url: '/pages/settings/index'
     });
   },
 
-  handleOpenAgreement() {
-    logger.trackEvent('center_open_agreement');
+  handleOpenInfo() {
+    logger.trackEvent('center_open_info');
     wx.navigateTo({
-      url: '/pages/legal/index?type=agreement'
-    });
-  },
-
-  handleOpenReleaseChecklist() {
-    logger.trackEvent('center_open_release_checklist');
-    wx.navigateTo({
-      url: '/pages/legal/index?type=release'
-    });
-  },
-
-  handleCopyLogs() {
-    const exportText = logger.buildExportText(80);
-    wx.setClipboardData({
-      data: exportText,
-      success: () => {
-        logger.trackEvent('center_copy_logs');
-        wx.showToast({
-          title: '运行日志已复制',
-          icon: 'none'
-        });
-      }
-    });
-  },
-
-  handleClearLogs() {
-    wx.showModal({
-      title: '清空运行日志',
-      content: '清空后将移除本地埋点和错误日志记录，方便重新开始排查。',
-      success: (res) => {
-        if (!res.confirm) {
-          return;
-        }
-
-        logger.clearLogs();
-        logger.trackEvent('center_clear_logs');
-        wx.showToast({
-          title: '运行日志已清空',
-          icon: 'none'
-        });
-      }
+      url: '/pages/info/index'
     });
   }
 });

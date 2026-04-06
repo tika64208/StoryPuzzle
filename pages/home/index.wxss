@@ -143,6 +143,10 @@
   margin-top: 18rpx;
 }
 
+.quick-settings-btn {
+  margin-top: 18rpx;
+}
+
 .hero-footer {
   margin-top: 22rpx;
   padding-top: 18rpx;

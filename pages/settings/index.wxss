@@ -1,0 +1,84 @@
+.settings-hero {
+  margin-top: 22rpx;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 90% 18%, rgba(126, 224, 219, 0.18), transparent 24%),
+    linear-gradient(180deg, rgba(14, 43, 63, 0.84) 0%, rgba(8, 26, 40, 0.88) 100%);
+}
+
+.settings-hero-head {
+  align-items: flex-start;
+  gap: 18rpx;
+}
+
+.settings-hero-copy {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #d9f5ff;
+}
+
+.settings-pill-row {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.settings-pill {
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  text-align: center;
+  font-size: 24rpx;
+  color: #bcd8e7;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1rpx solid rgba(177, 232, 255, 0.08);
+}
+
+.settings-pill-active {
+  color: #eef9ff;
+  background: rgba(126, 224, 219, 0.12);
+  border-color: rgba(126, 224, 219, 0.2);
+}
+
+.settings-note {
+  margin-top: 18rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #b6d2e0;
+}
+
+.option-card {
+  overflow: hidden;
+  margin-top: 20rpx;
+}
+
+.option-row {
+  align-items: flex-start;
+  gap: 24rpx;
+}
+
+.setting-copy {
+  flex: 1;
+  min-width: 0;
+}
+
+.setting-state {
+  margin-top: 18rpx;
+  display: inline-flex;
+  align-items: center;
+  padding: 10rpx 18rpx;
+  border-radius: 999rpx;
+  font-size: 22rpx;
+  color: #daf6ff;
+  background: rgba(126, 224, 219, 0.12);
+  border: 1rpx solid rgba(126, 224, 219, 0.18);
+}
+
+.settings-footer {
+  margin-top: 18rpx;
+}
+
+.action-gap {
+  margin-top: 22rpx;
+}

@@ -1,3 +1,5 @@
+// Legacy page-based implementation kept for reference and filing support only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const levelRepo = require('../../services/level-repo');
 const gameEngine = require('../../utils/game');
 const storage = require('../../utils/storage');
@@ -242,11 +244,6 @@ Page({
       title: `已定格 ${lockedPieceIds.length} 块正确碎片`,
       icon: 'none'
     });
-    logger.trackEvent('game_use_guide_tool', {
-      levelId: this.level.levelId,
-      pieceId: hint.pieceId,
-      targetSlot: hint.targetSlot
-    });
   },
 
   handleUseGuideTool() {
@@ -284,7 +281,8 @@ Page({
         guideHintText: buildGuideHintText(hint)
       });
 
-      if (wx.vibrateShort) {
+      const profile = storage.getProfile();
+      if (profile.vibrationEnabled && wx.vibrateShort) {
         try {
           wx.vibrateShort({
             type: 'light'
@@ -293,6 +291,12 @@ Page({
           // Ignore unsupported vibration environments.
         }
       }
+
+      logger.trackEvent('game_use_guide_tool', {
+        levelId: this.level.levelId,
+        pieceId: hint.pieceId,
+        targetSlot: hint.targetSlot
+      });
 
       wx.showToast({
         title: '已标出破局碎片',

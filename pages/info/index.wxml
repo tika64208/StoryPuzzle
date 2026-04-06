@@ -1,0 +1,96 @@
+<view class="page-shell">
+  <view class="page-title">信息系统</view>
+  <view class="page-subtitle">
+    这里集中展示玩法、规则和当前状态，方便快速了解游戏内容，也更适合直接用于备案截图。
+  </view>
+
+  <view class="card hero-card">
+    <view class="row-between hero-head">
+      <view>
+        <view class="card-title">玩法与状态总览</view>
+        <view class="hero-current">当前关卡：{{currentLevelTitle}}</view>
+      </view>
+      <view class="chip">体力 {{profile.energy}} / {{profile.maxEnergy}}</view>
+    </view>
+    <view class="hero-tag-grid">
+      <view class="hero-tag">
+        <view class="hero-tag-label">已完成</view>
+        <view class="hero-tag-value">{{summary.completedLevels}} / {{summary.totalLevels}}</view>
+      </view>
+      <view class="hero-tag">
+        <view class="hero-tag-label">已解锁</view>
+        <view class="hero-tag-value">{{summary.unlockedLevels}} 关</view>
+      </view>
+      <view class="hero-tag">
+        <view class="hero-tag-label">自定义</view>
+        <view class="hero-tag-value">{{summary.customLevels}} 关</view>
+      </view>
+    </view>
+    <view class="hero-note">恢复信息：{{energyText}}</view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="card-title">玩法速览</view>
+    <view class="quick-grid">
+      <view class="quick-cell">
+        <view class="quick-title">拖动还原</view>
+        <view class="quick-copy">拖动拼块，将被打乱的图片恢复为完整画面即可通关。</view>
+      </view>
+      <view class="quick-cell">
+        <view class="quick-title">关卡推进</view>
+        <view class="quick-copy">采用章节推进形式，随着进度提升逐步增加拼图数量和复杂度。</view>
+      </view>
+      <view class="quick-cell">
+        <view class="quick-title">辅助挑战</view>
+        <view class="quick-copy">可使用提示、定格符和引路符等功能，帮助更顺利地完成挑战。</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="card-title">系统说明</view>
+    <view class="rule-list">
+      <view class="rule-row">
+        <view class="rule-badge">体力</view>
+        <view class="rule-copy">进入主线关卡会消耗一定体力值，体力可自动恢复，也可通过签到或激励广告补充。</view>
+      </view>
+      <view class="rule-row">
+        <view class="rule-badge">道具</view>
+        <view class="rule-copy">定格符用于锁定已归位碎片，引路符用于高亮拼接方向，提示可辅助完成局部还原。</view>
+      </view>
+      <view class="rule-row">
+        <view class="rule-badge">自定义</view>
+        <view class="rule-copy">支持从相册生成自定义拼图，也可导入好友分享的谜境码继续挑战同一张图片。</view>
+      </view>
+    </view>
+  </view>
+
+  <view class="card compact-card">
+    <view class="row-between">
+      <view class="card-title">协议入口</view>
+      <view class="chip">隐私 / 协议 / 发布</view>
+    </view>
+    <view class="card-desc">可在这里查看隐私政策、用户协议和发布检查内容，方便整理备案与提审资料。</view>
+    <view wx:if="{{companyName || supportWechat}}" class="contact-panel">
+      <view wx:if="{{companyName}}" class="contact-line">主体名称：{{companyName}}</view>
+      <view wx:if="{{supportWechat}}" class="contact-line">客服微信：{{supportWechat}}</view>
+    </view>
+    <view class="grid-two action-gap">
+      <button class="secondary-btn" bindtap="handleOpenPrivacy">隐私政策</button>
+      <button class="secondary-btn" bindtap="handleOpenAgreement">用户协议</button>
+    </view>
+    <button class="secondary-btn action-gap" bindtap="handleOpenReleaseChecklist">发布检查</button>
+  </view>
+
+  <view class="card footer-card">
+    <view class="row-between">
+      <view class="card-title">运行信息</view>
+      <view class="chip">日志工具</view>
+    </view>
+    <view class="card-desc">如需排查问题，可复制最近运行日志，或清空后重新复现问题。</view>
+    <view class="grid-two action-gap">
+      <button class="secondary-btn" bindtap="handleCopyLogs">复制运行日志</button>
+      <button class="secondary-btn" bindtap="handleClearLogs">清空运行日志</button>
+    </view>
+  </view>
+</view>

@@ -1,3 +1,5 @@
+// Legacy page-based implementation kept for reference and filing support only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const levelRepo = require('../../services/level-repo');
 const logger = require('../../services/logger');
 const storage = require('../../utils/storage');
@@ -255,6 +257,13 @@ Page({
     logger.trackEvent('home_open_center');
     wx.navigateTo({
       url: '/pages/center/index'
+    });
+  },
+
+  handleSettings() {
+    logger.trackEvent('home_open_settings');
+    wx.navigateTo({
+      url: '/pages/settings/index'
     });
   },
 

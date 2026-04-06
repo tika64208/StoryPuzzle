@@ -1,7 +1,7 @@
 <view class="page-shell">
   <view class="page-title">谜境补给站</view>
   <view class="page-subtitle">
-    这里集中管理体力、定格符、引路符、签到、音效和自定义谜境入口，方便随时补资源再回去继续入局。
+    这里集中管理体力、定格符、引路符、签到和自定义谜境入口，方便随时补资源再回去继续入局。
   </view>
 
   <view class="card">
@@ -62,34 +62,13 @@
 
   <view class="card">
     <view class="row-between">
-      <view class="card-title">基础设置</view>
-      <switch checked="{{profile.soundEnabled}}" color="#d57d49" bindchange="handleToggleSound" />
+      <view class="card-title">系统入口</view>
+      <view class="chip">设置 / 信息</view>
     </view>
-    <view class="card-desc">后续这里还可以继续扩展成震动、背景音乐、剧情跳过和隐私授权。</view>
-  </view>
-
-  <view class="card">
-    <view class="row-between">
-      <view class="card-title">上线必需项</view>
-      <view class="chip">隐私 / 协议 / 发布</view>
-    </view>
-    <view class="card-desc">提审前可以在这里查看隐私政策、用户协议和当前发布检查清单，减少漏项。</view>
+    <view class="card-desc">补给中心只负责资源补充，基础设置和玩法说明已经拆分成独立页面，方便随时查看和截图。</view>
     <view class="grid-two action-gap">
-      <button class="secondary-btn" bindtap="handleOpenPrivacy">查看隐私政策</button>
-      <button class="secondary-btn" bindtap="handleOpenAgreement">查看用户协议</button>
-    </view>
-    <button class="secondary-btn action-gap" bindtap="handleOpenReleaseChecklist">查看发布检查</button>
-  </view>
-
-  <view class="card">
-    <view class="row-between">
-      <view class="card-title">运行日志</view>
-      <view class="chip">排障导出</view>
-    </view>
-    <view class="card-desc">已经开始记录基础埋点和错误日志。遇到问题时，你可以直接复制最近日志发给开发排查。</view>
-    <view class="grid-two action-gap">
-      <button class="secondary-btn" bindtap="handleCopyLogs">复制运行日志</button>
-      <button class="secondary-btn" bindtap="handleClearLogs">清空运行日志</button>
+      <button class="secondary-btn" bindtap="handleOpenSettings">进入设置系统</button>
+      <button class="secondary-btn" bindtap="handleOpenInfo">进入信息系统</button>
     </view>
   </view>
 </view>

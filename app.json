@@ -7,6 +7,8 @@
     "pages/game/index",
     "pages/result/index",
     "pages/center/index",
+    "pages/settings/index",
+    "pages/info/index",
     "pages/legal/index"
   ],
   "window": {

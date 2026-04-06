@@ -1,0 +1,58 @@
+<view class="page-shell">
+  <view class="page-title">设置系统</view>
+  <view class="page-subtitle">
+    这里集中管理游戏体验相关的基础开关，方便快速查看当前配置，也更适合直接用于备案截图。
+  </view>
+
+  <view class="card settings-hero">
+    <view class="row-between settings-hero-head">
+      <view>
+        <view class="card-title">基础设置总览</view>
+        <view class="settings-hero-copy">当前已开启 {{enabledCount}} / 2 项基础体验开关</view>
+      </view>
+      <view class="chip">音效 / 震动</view>
+    </view>
+    <view class="settings-pill-row">
+      <view class="settings-pill {{profile.soundEnabled ? 'settings-pill-active' : ''}}">
+        {{profile.soundEnabled ? '音效已开启' : '音效已关闭'}}
+      </view>
+      <view class="settings-pill {{profile.vibrationEnabled ? 'settings-pill-active' : ''}}">
+        {{profile.vibrationEnabled ? '震动已开启' : '震动已关闭'}}
+      </view>
+    </view>
+    <view class="settings-note">调整后会立即生效，可按设备环境和个人习惯快速切换。</view>
+  </view>
+
+  <view class="card option-card">
+    <view class="row-between option-row">
+      <view class="setting-copy">
+        <view class="card-title">游戏音效</view>
+        <view class="card-desc">控制按钮点击、拼块吸附、通关提示和环境音的播放状态。</view>
+      </view>
+      <switch checked="{{profile.soundEnabled}}" color="#d57d49" bindchange="handleToggleSound" />
+    </view>
+    <view class="setting-state">{{profile.soundEnabled ? '当前已开启音效反馈' : '当前已关闭音效反馈'}}</view>
+  </view>
+
+  <view class="card option-card">
+    <view class="row-between option-row">
+      <view class="setting-copy">
+        <view class="card-title">震动反馈</view>
+        <view class="card-desc">控制引路符高亮等关键操作时的轻微震动提示。</view>
+      </view>
+      <switch checked="{{profile.vibrationEnabled}}" color="#d57d49" bindchange="handleToggleVibration" />
+    </view>
+    <view class="setting-state">{{profile.vibrationEnabled ? '当前已开启震动反馈' : '当前已关闭震动反馈'}}</view>
+  </view>
+
+  <view class="card settings-footer">
+    <view class="row-between">
+      <view class="card-title">设置说明</view>
+      <view class="chip">实时生效</view>
+    </view>
+    <view class="card-desc">
+      建议截图时保留两个开关和顶部总览卡，能更清晰地对应“设置系统”中的音效、震动等基础配置内容。
+    </view>
+    <button class="secondary-btn action-gap" bindtap="handleOpenInfo">查看信息系统</button>
+  </view>
+</view>

@@ -1,0 +1,182 @@
+function createRuntimeHelperBundles(deps) {
+  const {
+    CHALLENGE_SCORE_CLOUD_KEY,
+    CHALLENGE_SCORE_UPDATED_KEY,
+    CHAPTER_DIFFICULTY_OPTIONS,
+    CUSTOM_LAYOUT_OPTIONS,
+    CUSTOM_SHARE_BASE64_LIMIT,
+    DEFAULT_CUSTOM_IMAGE_PATH,
+    DEFAULT_CUSTOM_TITLE,
+    MAX_IMAGE_CACHE_ITEMS,
+    actionSheetPromise,
+    audioService,
+    buildLeaderboardLoadViewModel,
+    chooseImagePromise,
+    chunkArray,
+    clamp,
+    compressImagePromise,
+    drawGlassCard,
+    drawImageCover,
+    drawParagraph,
+    drawSettingsGearIcon,
+    drawText,
+    fillRoundRect,
+    formatTime,
+    getAccountInfo,
+    getChallengeScore,
+    getChapterCoverLevel,
+    getChapterDifficultyConfig,
+    getChapterDifficultyStars,
+    getChapterSummary,
+    getChaptersWithDifficulty,
+    getClipboardDataPromise,
+    getLevelByIdWithDifficulty,
+    getMiniGameImageCandidates,
+    getSafeChapterTitle,
+    getSafeLevelTitle,
+    getTodayKey,
+    hitButton,
+    logger,
+    modalPromise,
+    resolvePreviewImage,
+    roundRectPath,
+    storage,
+    wrapText
+  } = deps;
+
+  return {
+    appProfile: { storage },
+    appStart: { audioService, getAccountInfo, logger, storage },
+    boardDraw: { drawText, fillRoundRect, resolvePreviewImage, roundRectPath },
+    boardEffects: { roundRectPath },
+    bootstrap: { clamp, DEFAULT_CUSTOM_IMAGE_PATH, DEFAULT_CUSTOM_TITLE, storage },
+    buildHomeLayout: { getSafeLevelTitle },
+    buildLegalLayout: { clamp },
+    buildLegalPages: { chunkArray },
+    buildLevelLayout: { CHAPTER_DIFFICULTY_OPTIONS, getChapterDifficultyStars },
+    buttonDraw: { drawText, fillRoundRect },
+    capturePressState: { clamp, hitButton },
+    challengeSync: {
+      CHALLENGE_SCORE_CLOUD_KEY,
+      CHALLENGE_SCORE_UPDATED_KEY,
+      getChallengeScore
+    },
+    chapterNarrativeOverlay: {
+      drawGlassCard,
+      drawImageCover,
+      drawParagraph,
+      drawText,
+      fillRoundRect,
+      getChapterCoverLevel,
+      getSafeChapterTitle,
+      resolvePreviewImage
+    },
+    chapterOverlay: { getChapterSummary, getSafeChapterTitle },
+    chapterShare: {
+      getChaptersWithDifficulty,
+      getChapterCoverLevel,
+      getSafeChapterTitle,
+      resolvePreviewImage
+    },
+    customChooseImage: { chooseImagePromise },
+    customChooseLayout: { actionSheetPromise, CUSTOM_LAYOUT_OPTIONS },
+    customCreateLevel: {
+      compressImagePromise,
+      CUSTOM_LAYOUT_OPTIONS,
+      CUSTOM_SHARE_BASE64_LIMIT,
+      DEFAULT_CUSTOM_TITLE,
+      modalPromise
+    },
+    customDelete: { modalPromise },
+    customImportCode: { getClipboardDataPromise, modalPromise },
+    customScreen: {
+      CUSTOM_LAYOUT_OPTIONS,
+      DEFAULT_CUSTOM_TITLE,
+      drawGlassCard,
+      drawParagraph,
+      drawText,
+      fillRoundRect,
+      getSafeLevelTitle,
+      resolvePreviewImage
+    },
+    customUseDefault: { DEFAULT_CUSTOM_IMAGE_PATH, DEFAULT_CUSTOM_TITLE },
+    drawLoading: { drawText },
+    feedbackAudio: { audioService },
+    feedbackHaptic: { logger },
+    hitButton: { hitButton },
+    homeShare: { resolvePreviewImage },
+    imageCache: { getMiniGameImageCandidates },
+    imageCachePrune: { MAX_IMAGE_CACHE_ITEMS },
+    leaderboardLoad: {
+      CHALLENGE_SCORE_CLOUD_KEY,
+      CHALLENGE_SCORE_UPDATED_KEY,
+      buildLeaderboardLoadViewModel
+    },
+    leaderboardPanel: { drawGlassCard, drawImageCover, drawText, fillRoundRect },
+    legalPanel: { drawGlassCard, drawText, wrapText },
+    levelShare: { getSafeLevelTitle, resolvePreviewImage },
+    moreTools: { actionSheetPromise },
+    openIntro: { getSafeLevelTitle },
+    openLevel: { getLevelByIdWithDifficulty, getSafeLevelTitle, resolvePreviewImage },
+    overlayDraw: { drawGlassCard, drawParagraph, drawText, fillRoundRect, formatTime },
+    preferredImageSources: {
+      DEFAULT_CUSTOM_IMAGE_PATH,
+      getChapterCoverLevel,
+      getMiniGameImageCandidates,
+      resolvePreviewImage
+    },
+    puzzleDraw: {
+      drawGlassCard,
+      drawImageCover,
+      drawText,
+      fillRoundRect,
+      formatTime,
+      getSafeChapterTitle,
+      getSafeLevelTitle
+    },
+    selectedChapter: { getChaptersWithDifficulty },
+    selectedChapterDifficulty: { getChapterDifficultyStars },
+    settingsPanel: { drawGlassCard, drawText, fillRoundRect },
+    settleTrail: { fillRoundRect },
+    share: {
+      getChaptersWithDifficulty,
+      getChapterCoverLevel,
+      getSafeChapterTitle,
+      getSafeLevelTitle,
+      resolvePreviewImage
+    },
+    storyScreens: {
+      drawText,
+      drawParagraph,
+      fillRoundRect,
+      drawGlassCard,
+      drawImageCover,
+      roundRectPath,
+      drawSettingsGearIcon,
+      resolvePreviewImage,
+      getSafeLevelTitle,
+      getSafeChapterTitle,
+      getChapterSummary,
+      getChapterCoverLevel,
+      getChapterDifficultyConfig,
+      getChapterDifficultyStars
+    },
+    successOverlayDraw: {
+      drawGlassCard,
+      drawParagraph,
+      drawText,
+      fillRoundRect,
+      formatTime,
+      getSafeLevelTitle
+    },
+    supplyPanel: { drawGlassCard, drawText, getTodayKey },
+    switchToCustom: { DEFAULT_CUSTOM_IMAGE_PATH, DEFAULT_CUSTOM_TITLE },
+    switchToLevels: { getChaptersWithDifficulty },
+    toastDraw: { drawText, fillRoundRect },
+    touchStart: { clamp }
+  };
+}
+
+module.exports = {
+  createRuntimeHelperBundles
+};

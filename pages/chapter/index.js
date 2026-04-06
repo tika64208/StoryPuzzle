@@ -1,3 +1,5 @@
+// Legacy page-based implementation kept for reference and filing support only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const levelRepo = require('../../services/level-repo');
 const storage = require('../../utils/storage');
 

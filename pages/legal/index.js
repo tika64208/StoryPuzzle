@@ -1,3 +1,5 @@
+// Legacy page-based implementation kept for reference and filing support only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const legal = require('../../config/legal');
 const release = require('../../services/release');
 const logger = require('../../services/logger');
@@ -22,6 +24,7 @@ Page({
     supportWechat: legal.supportWechat,
     sections: [],
     releaseSummary: null,
+    releaseBlockingItems: [],
     releaseReadyItems: [],
     releasePendingItems: [],
     releaseTips: []
@@ -49,6 +52,7 @@ Page({
       title: titleMap[safeType],
       sections: [],
       releaseSummary: null,
+      releaseBlockingItems: [],
       releaseReadyItems: [],
       releasePendingItems: [],
       releaseTips: []
@@ -61,6 +65,7 @@ Page({
     } else {
       const checklist = release.getReleaseChecklist();
       nextData.releaseSummary = checklist.summary;
+      nextData.releaseBlockingItems = checklist.blockingItems;
       nextData.releaseReadyItems = checklist.readyItems;
       nextData.releasePendingItems = checklist.pendingItems;
       nextData.releaseTips = checklist.tips;

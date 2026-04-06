@@ -1,0 +1,150 @@
+.hero-card {
+  margin-top: 22rpx;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 88% 18%, rgba(126, 224, 219, 0.18), transparent 26%),
+    linear-gradient(180deg, rgba(14, 43, 63, 0.84) 0%, rgba(8, 26, 40, 0.88) 100%);
+}
+
+.hero-head {
+  align-items: flex-start;
+  gap: 18rpx;
+}
+
+.hero-current {
+  margin-top: 12rpx;
+  font-size: 24rpx;
+  line-height: 1.6;
+  color: #d9f5ff;
+}
+
+.hero-tag-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16rpx;
+  margin-top: 22rpx;
+}
+
+.hero-tag {
+  padding: 20rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1rpx solid rgba(177, 232, 255, 0.08);
+}
+
+.hero-tag-label {
+  font-size: 22rpx;
+  color: #b8d7e7;
+}
+
+.hero-tag-value {
+  margin-top: 10rpx;
+  font-size: 28rpx;
+  font-weight: 600;
+  color: #eef9ff;
+}
+
+.hero-note {
+  margin-top: 18rpx;
+  font-size: 23rpx;
+  line-height: 1.6;
+  color: #b6d2e0;
+}
+
+.compact-card {
+  margin-top: 20rpx;
+}
+
+.quick-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16rpx;
+  margin-top: 18rpx;
+}
+
+.quick-cell {
+  padding: 22rpx;
+  border-radius: 24rpx;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1rpx solid rgba(177, 232, 255, 0.08);
+}
+
+.quick-title {
+  font-size: 26rpx;
+  font-weight: 600;
+  color: #eef9ff;
+}
+
+.quick-copy {
+  margin-top: 10rpx;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #b6d2e0;
+}
+
+.rule-list {
+  margin-top: 18rpx;
+}
+
+.rule-row + .rule-row {
+  margin-top: 16rpx;
+}
+
+.rule-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 18rpx;
+  padding: 18rpx 0;
+  border-top: 1rpx solid rgba(177, 232, 255, 0.08);
+}
+
+.rule-row:first-child {
+  padding-top: 0;
+  border-top: none;
+}
+
+.rule-badge {
+  flex-shrink: 0;
+  min-width: 88rpx;
+  padding: 8rpx 14rpx;
+  border-radius: 999rpx;
+  text-align: center;
+  font-size: 22rpx;
+  color: #ddfbff;
+  background: rgba(126, 224, 219, 0.14);
+  border: 1rpx solid rgba(126, 224, 219, 0.18);
+}
+
+.rule-copy {
+  flex: 1;
+  min-width: 0;
+  font-size: 24rpx;
+  line-height: 1.7;
+  color: #b6d2e0;
+}
+
+.contact-panel {
+  margin-top: 16rpx;
+  padding: 18rpx 20rpx;
+  border-radius: 22rpx;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1rpx solid rgba(177, 232, 255, 0.08);
+}
+
+.contact-line {
+  font-size: 23rpx;
+  line-height: 1.7;
+  color: #d0ebf8;
+}
+
+.contact-line + .contact-line {
+  margin-top: 6rpx;
+}
+
+.footer-card {
+  margin-top: 18rpx;
+}
+
+.action-gap {
+  margin-top: 22rpx;
+}

@@ -1,8 +1,13 @@
 const runtime = require('../config/runtime');
 const levelRepo = require('../services/level-repo');
+const challengeService = require('../services/challenge');
 
 const PROFILE_KEY = 'mystery_profile_v1';
 const PROGRESS_KEY = 'mystery_progress_v1';
+const {
+  CHAPTER_DIFFICULTY_STARS,
+  DEFAULT_CHAPTER_DIFFICULTY_STARS
+} = challengeService;
 
 function clone(data) {
   return JSON.parse(JSON.stringify(data));
@@ -52,7 +57,12 @@ function createDefaultProfile() {
     unlockDragTools: runtime.defaultUnlockDragTools,
     guideHintTools: runtime.defaultGuideHintTools,
     coins: 0,
+    challengeScore: 0,
     soundEnabled: true,
+    vibrationEnabled: true,
+    playerNickname: '',
+    playerAvatarPath: '',
+    chapterDifficultyMap: {},
     currentLevelId: levelRepo.getFirstLevelId(),
     lastSignInDate: ''
   };
@@ -91,6 +101,24 @@ function normalizeProfile(profile) {
   normalized.energyRecoverAt = Math.max(0, normalized.energyRecoverAt);
   normalized.energyResetDate =
     typeof normalized.energyResetDate === 'string' ? normalized.energyResetDate : '';
+  if (typeof normalized.challengeScore !== 'number' || Number.isNaN(normalized.challengeScore)) {
+    normalized.challengeScore = 0;
+  }
+  normalized.challengeScore = Math.max(0, Math.floor(normalized.challengeScore));
+  normalized.soundEnabled = normalized.soundEnabled !== false;
+  normalized.vibrationEnabled = normalized.vibrationEnabled !== false;
+  normalized.playerNickname = typeof normalized.playerNickname === 'string' ? normalized.playerNickname.trim() : '';
+  normalized.playerAvatarPath = typeof normalized.playerAvatarPath === 'string' ? normalized.playerAvatarPath.trim() : '';
+  normalized.chapterDifficultyMap =
+    normalized.chapterDifficultyMap && typeof normalized.chapterDifficultyMap === 'object'
+      ? Object.keys(normalized.chapterDifficultyMap).reduce((result, key) => {
+        const stars = Number(normalized.chapterDifficultyMap[key]);
+        if (CHAPTER_DIFFICULTY_STARS.indexOf(stars) !== -1) {
+          result[key] = stars;
+        }
+        return result;
+      }, {})
+      : {};
 
   if (!levelRepo.getLevelById(normalized.currentLevelId)) {
     normalized.currentLevelId = firstLevelId;
@@ -345,8 +373,43 @@ function saveSoundEnabled(enabled) {
   return clone(profile);
 }
 
+function saveVibrationEnabled(enabled) {
+  const profile = getProfile();
+  profile.vibrationEnabled = !!enabled;
+  saveProfile(profile);
+  return clone(profile);
+}
+
+function savePlayerIdentity(identity) {
+  const profile = getProfile();
+  const nextIdentity = identity && typeof identity === 'object' ? identity : {};
+  profile.playerNickname = typeof nextIdentity.nickname === 'string' ? nextIdentity.nickname.trim() : '';
+  profile.playerAvatarPath = typeof nextIdentity.avatarUrl === 'string' ? nextIdentity.avatarUrl.trim() : '';
+  saveProfile(profile);
+  return clone(profile);
+}
+
+function saveChapterDifficulty(chapterId, stars) {
+  const profile = getProfile();
+  const safeChapterId = typeof chapterId === 'string' ? chapterId : '';
+  const safeStars =
+    CHAPTER_DIFFICULTY_STARS.indexOf(Number(stars)) !== -1
+      ? Number(stars)
+      : DEFAULT_CHAPTER_DIFFICULTY_STARS;
+
+  if (!safeChapterId) {
+    return clone(profile);
+  }
+
+  profile.chapterDifficultyMap = Object.assign({}, profile.chapterDifficultyMap, {
+    [safeChapterId]: safeStars
+  });
+  saveProfile(profile);
+  return clone(profile);
+}
+
 function updateLevelResult(options) {
-  const level = levelRepo.getLevelById(options.levelId);
+  const level = options.levelMeta || levelRepo.getLevelById(options.levelId);
   const progress = getProgress();
   const profile = getProfile();
   const currentRecord = progress.levelRecords[options.levelId] || {
@@ -354,12 +417,15 @@ function updateLevelResult(options) {
     stars: 0,
     bestTime: 0,
     bestMoves: 0,
-    failCount: 0
+    failCount: 0,
+    bestChallengeStars: 0,
+    challengeScore: 0
   };
 
   let nextLevelId = '';
   let rewardCoins = 0;
   let stars = 0;
+  let challengeScore = 0;
 
   if (options.success && level) {
     stars =
@@ -378,7 +444,18 @@ function updateLevelResult(options) {
         ? options.moves
         : Math.min(currentRecord.bestMoves, options.moves);
 
+    const challengeStars =
+      !level.isCustom && CHAPTER_DIFFICULTY_STARS.indexOf(Number(level.difficultyStars)) !== -1
+        ? Number(level.difficultyStars)
+        : 0;
+    const previousChallengeScore = Math.max(0, Number(currentRecord.challengeScore) || 0);
+    const nextChallengeScore = Math.max(previousChallengeScore, challengeStars);
+    challengeScore = Math.max(0, nextChallengeScore - previousChallengeScore);
+    currentRecord.bestChallengeStars = Math.max(Number(currentRecord.bestChallengeStars) || 0, challengeStars);
+    currentRecord.challengeScore = nextChallengeScore;
+
     profile.coins += rewardCoins;
+    profile.challengeScore = Math.max(0, Number(profile.challengeScore) || 0) + challengeScore;
     nextLevelId = levelRepo.getNextLevelId(options.levelId);
     if (nextLevelId && progress.unlockedLevels.indexOf(nextLevelId) === -1) {
       progress.unlockedLevels.push(nextLevelId);
@@ -400,7 +477,9 @@ function updateLevelResult(options) {
     profile: clone(profile),
     rewards: {
       coins: rewardCoins,
-      stars
+      stars,
+      challengeScore,
+      totalChallengeScore: Math.max(0, Number(profile.challengeScore) || 0)
     },
     nextLevelId
   };
@@ -457,7 +536,10 @@ module.exports = {
   getEnergyCountdownText,
   getProfile,
   getProgress,
+  saveChapterDifficulty,
   saveSoundEnabled,
+  savePlayerIdentity,
+  saveVibrationEnabled,
   setCurrentLevel,
   updateLevelResult
 };

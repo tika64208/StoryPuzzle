@@ -40,6 +40,7 @@
         <button class="secondary-btn" bindtap="handleBrowse">系统章节</button>
         <button class="secondary-btn" bindtap="handleCustom">自定义拼图</button>
       </view>
+      <button class="secondary-btn quick-settings-btn" bindtap="handleSettings">设置系统</button>
     </view>
 
     <view class="hero-footer">
@@ -108,7 +109,7 @@
       <view class="section-title">你的谜境</view>
       <view class="section-copy">默认图、相册图和朋友分享的挑战码，都能在这里变成可玩的拼图关卡。</view>
     </view>
-    <button class="ghost-btn compact-ghost" bindtap="handleCenter">个人中心</button>
+    <button class="ghost-btn compact-ghost" bindtap="handleCenter">补给中心</button>
   </view>
 
   <view class="card custom-card">

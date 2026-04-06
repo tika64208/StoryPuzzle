@@ -1,3 +1,5 @@
+// Legacy page-based App entry kept for reference and filing flows only.
+// The actual mini-game runtime entry is `game.js` -> `minigame/app.js`.
 const logger = require('./services/logger');
 const storage = require('./utils/storage');
 
